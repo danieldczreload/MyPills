@@ -1,0 +1,70 @@
+{
+  "@@locale": "es",
+
+  "appTitle": "MyPills",
+  "@appTitle": {
+    "description": "Application title shown in the app bar."
+  },
+
+  "navToday": "Hoy",
+  "@navToday": { "description": "Bottom nav label — Today tab." },
+
+  "navMedications": "Medicamentos",
+  "@navMedications": { "description": "Bottom nav label — Medications tab." },
+
+  "navTimeline": "Historial",
+  "@navTimeline": { "description": "Bottom nav label — Timeline tab." },
+
+  "homeGreetingMorning": "Buenos días",
+  "@homeGreetingMorning": { "description": "Morning greeting on the Home/Tracker screen." },
+
+  "homeGreetingAfternoon": "Buenas tardes",
+  "@homeGreetingAfternoon": { "description": "Afternoon greeting on the Home/Tracker screen." },
+
+  "homeGreetingEvening": "Buenas noches",
+  "@homeGreetingEvening": { "description": "Evening greeting on the Home/Tracker screen." },
+
+  "todayDosesTitle": "Dosis de hoy",
+  "@todayDosesTitle": { "description": "Section header on the tracker screen." },
+
+  "doseStatusTaken": "Tomado",
+  "@doseStatusTaken": { "description": "Chip label — dose has been taken." },
+
+  "doseStatusPending": "Pendiente",
+  "@doseStatusPending": { "description": "Chip label — dose is pending." },
+
+  "doseStatusMissed": "Omitido",
+  "@doseStatusMissed": { "description": "Chip label — dose was missed (use amber, never red)." },
+
+  "markTakenButton": "Marcar como tomado",
+  "@markTakenButton": { "description": "Primary CTA to mark a dose as taken." },
+
+  "medicationsTitle": "Mis medicamentos",
+  "@medicationsTitle": { "description": "Screen title for the medication catalog." },
+
+  "addMedicationButton": "Agregar medicamento",
+  "@addMedicationButton": { "description": "FAB / button label to add a new medication." },
+
+  "schedulerDailyTitle": "Horario diario",
+  "@schedulerDailyTitle": { "description": "Screen title for the daily scheduler." },
+
+  "schedulerSpecificDaysTitle": "Días específicos",
+  "@schedulerSpecificDaysTitle": { "description": "Screen title for the specific-days scheduler." },
+
+  "timelineTitle": "Historial",
+  "@timelineTitle": { "description": "Screen title for the timeline." },
+
+  "errorUnexpected": "Ocurrió un error inesperado",
+  "@errorUnexpected": { "description": "Generic unexpected-error message." },
+
+  "errorNotFound": "No se encontró el recurso solicitado",
+  "@errorNotFound": { "description": "Not-found error message." },
+
+  "doseCount": "{count, plural, =0{Sin dosis} =1{1 dosis} other{{count} dosis}}",
+  "@doseCount": {
+    "description": "Pluralised dose counter.",
+    "placeholders": {
+      "count": { "type": "int", "format": "decimalPattern" }
+    }
+  }
+}
