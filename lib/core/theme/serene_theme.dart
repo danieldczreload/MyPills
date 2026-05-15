@@ -25,24 +25,24 @@ class SereneTheme extends ThemeExtension<SereneTheme> {
 
   /// Creates a [SereneTheme] with all required design tokens.
   factory SereneTheme.standard() => SereneTheme(
-        glassOpacity: 0.70,
-        glassBlur: 20,
-        signatureGradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          transform: GradientRotation(135 * 3.14159 / 180),
-          colors: [AppColors.primary, AppColors.primaryContainer],
-        ),
-        ambientShadow: [
-          BoxShadow(
-            color: AppColors.primaryContainer.withValues(alpha: 0.08),
-            blurRadius: 40,
-            offset: const Offset(0, 20),
-          ),
-        ],
-        spacing: const SpacingScale(),
-        radius: const RadiusScale(),
-      );
+    glassOpacity: 0.70,
+    glassBlur: 20,
+    signatureGradient: const LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      transform: GradientRotation(135 * 3.14159 / 180),
+      colors: [AppColors.primary, AppColors.primaryContainer],
+    ),
+    ambientShadow: [
+      BoxShadow(
+        color: AppColors.primaryContainer.withValues(alpha: 0.08),
+        blurRadius: 40,
+        offset: const Offset(0, 20),
+      ),
+    ],
+    spacing: const SpacingScale(),
+    radius: const RadiusScale(),
+  );
 
   // ── Glass surface ──────────────────────────────────────────────────────────
 
@@ -82,37 +82,33 @@ class SereneTheme extends ThemeExtension<SereneTheme> {
     List<BoxShadow>? ambientShadow,
     SpacingScale? spacing,
     RadiusScale? radius,
-  }) =>
-      SereneTheme(
-        glassOpacity: glassOpacity ?? this.glassOpacity,
-        glassBlur: glassBlur ?? this.glassBlur,
-        signatureGradient: signatureGradient ?? this.signatureGradient,
-        ambientShadow: ambientShadow ?? this.ambientShadow,
-        spacing: spacing ?? this.spacing,
-        radius: radius ?? this.radius,
-      );
+  }) => SereneTheme(
+    glassOpacity: glassOpacity ?? this.glassOpacity,
+    glassBlur: glassBlur ?? this.glassBlur,
+    signatureGradient: signatureGradient ?? this.signatureGradient,
+    ambientShadow: ambientShadow ?? this.ambientShadow,
+    spacing: spacing ?? this.spacing,
+    radius: radius ?? this.radius,
+  );
 
   @override
   SereneTheme lerp(SereneTheme? other, double t) {
     if (other == null) return this;
     return SereneTheme(
-      glassOpacity:
-          _lerpDouble(glassOpacity, other.glassOpacity, t),
+      glassOpacity: _lerpDouble(glassOpacity, other.glassOpacity, t),
       glassBlur: _lerpDouble(glassBlur, other.glassBlur, t),
       signatureGradient: LinearGradient.lerp(
         signatureGradient,
         other.signatureGradient,
         t,
       )!,
-      ambientShadow:
-          BoxShadow.lerpList(ambientShadow, other.ambientShadow, t)!,
+      ambientShadow: BoxShadow.lerpList(ambientShadow, other.ambientShadow, t)!,
       spacing: spacing,
       radius: radius,
     );
   }
 
-  static double _lerpDouble(double a, double b, double t) =>
-      a + (b - a) * t;
+  static double _lerpDouble(double a, double b, double t) => a + (b - a) * t;
 }
 
 // ── Spacing scale ────────────────────────────────────────────────────────────

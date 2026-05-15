@@ -4,6 +4,15 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	
+	<!-- Calendar Sync Permissions (Phase 2) -->
+	<key>NSCalendarsUsageDescription</key>
+	<string>MyPills necesita acceso al calendario para sincronizar los horarios de tus medicamentos y generar recordatorios nativos.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>MyPills requiere acceso completo al calendario para crear y borrar eventos de las tomas de tus medicamentos.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>Requerido por el sistema para gestionar eventos del calendario.</string>
+
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

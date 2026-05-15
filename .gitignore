@@ -53,6 +53,10 @@ android/key.properties
 android/**/GeneratedPluginRegistrant.java
 android/**/gradle-wrapper.jar
 
+# Android signing keys
+*.jks
+*.keystore
+
 # Web
 lib/generated_plugin_registrant.dart
 
@@ -61,6 +65,9 @@ macos/Flutter/GeneratedPluginRegistrant.swift
 macos/Flutter/Flutter-Debug.xcconfig
 macos/Flutter/Flutter-Release.xcconfig
 macos/Flutter/ephemeral/
+macos/Pods/
+macos/Runner.xcworkspace/
+macos/.symlinks/
 
 # Linux
 linux/flutter/generated_plugin_registrant.cc
@@ -96,5 +103,30 @@ secrets.dart
 .DS_Store
 Thumbs.db
 
-#Kilo code
-.kilo/kilo.jsonc
+# Kilo code
+.kilo/
+
+# Logs
+*.log
+
+# SDK local de Android
+android-sdk/
+
+# Configuraciones locales de herramientas de IA/Asistentes
+.claude/
+
+# Editor temporary / backup files
+*.swp
+*.swo
+*~
+*.orig
+
+# FVM (Flutter Version Management)
+.fvm/
+
+# Miscellaneous
+.atom/
+.buildlog/
+.history/
+.svn/
+migrate_working_dir/

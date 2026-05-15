@@ -7,13 +7,13 @@
   },
 
   "navToday": "Hoy",
-  "@navToday": { "description": "Bottom nav label — Today tab." },
+  "@navToday": { "description": "Bottom nav label — Today/Tracker tab." },
 
   "navMedications": "Medicamentos",
   "@navMedications": { "description": "Bottom nav label — Medications tab." },
 
-  "navTimeline": "Historial",
-  "@navTimeline": { "description": "Bottom nav label — Timeline tab." },
+  "navCategories": "Categorías",
+  "@navCategories": { "description": "Bottom nav label — Categories tab." },
 
   "homeGreetingMorning": "Buenos días",
   "@homeGreetingMorning": { "description": "Morning greeting on the Home/Tracker screen." },
@@ -66,5 +66,316 @@
     "placeholders": {
       "count": { "type": "int", "format": "decimalPattern" }
     }
-  }
+  },
+
+  "todayPendingDosesMessage": "Tienes {count} tomas pendientes para hoy. Sigue así.",
+  "@todayPendingDosesMessage": {
+    "description": "Header subtitle showing pending dose count on tracker.",
+    "placeholders": {
+      "count": { "type": "int", "format": "decimalPattern" }
+    }
+  },
+
+  "emptyTodayDoses": "No hay dosis programadas para hoy",
+  "@emptyTodayDoses": { "description": "Empty state message on today tracker." },
+
+  "emptyMedications": "Aún no has agregado medicamentos",
+  "@emptyMedications": { "description": "Empty state message for medication catalog." },
+
+  "unknownMedication": "Medicamento",
+  "@unknownMedication": { "description": "Fallback label when medication name cannot be resolved." },
+
+  "markMissedButton": "Marcar como omitido",
+  "@markMissedButton": { "description": "Secondary action to mark a dose as missed." },
+
+  "saveButton": "Guardar",
+  "@saveButton": { "description": "Generic save action." },
+
+  "cancelButton": "Cancelar",
+  "@cancelButton": { "description": "Generic cancel action." },
+
+  "nameLabel": "Nombre",
+  "@nameLabel": { "description": "Input label for medication name." },
+
+  "categoryLabel": "Categoría",
+  "@categoryLabel": { "description": "Input label for medication category." },
+
+  "notesLabel": "Notas",
+  "@notesLabel": { "description": "Input label for optional notes." },
+
+  "medicationFormLabel": "Forma",
+  "@medicationFormLabel": { "description": "Input label for medication physical form." },
+
+  "startDateLabel": "Fecha de inicio",
+  "@startDateLabel": { "description": "Input label for schedule start date." },
+
+  "endDateLabel": "Fecha de fin",
+  "@endDateLabel": { "description": "Input label for schedule end date." },
+
+  "timeLabel": "Hora",
+  "@timeLabel": { "description": "Generic time label." },
+
+  "addTimeButton": "Agregar hora",
+  "@addTimeButton": { "description": "Button to add another time-of-day in scheduler." },
+
+  "createScheduleButton": "Crear horario",
+  "@createScheduleButton": { "description": "Primary action to create a schedule." },
+
+  "selectMedicationLabel": "Medicamento",
+  "@selectMedicationLabel": { "description": "Input label for medication picker in schedulers." },
+
+  "noMedicationsForSchedule": "Agrega un medicamento antes de crear un horario",
+  "@noMedicationsForSchedule": { "description": "Message shown when trying to schedule without medications." },
+
+  "timelineWindowTitle": "Últimos 7 días",
+  "@timelineWindowTitle": { "description": "Timeline range title for default window." },
+
+  "medicationFormPill": "Tableta",
+  "@medicationFormPill": { "description": "Medication form label for pill." },
+
+  "medicationFormCapsule": "Cápsula",
+  "@medicationFormCapsule": { "description": "Medication form label for capsule." },
+
+  "medicationFormLiquid": "Líquido",
+  "@medicationFormLiquid": { "description": "Medication form label for liquid." },
+
+  "medicationFormInjection": "Inyección",
+  "@medicationFormInjection": { "description": "Medication form label for injection." },
+
+  "medicationFormDrops": "Gotas",
+  "@medicationFormDrops": { "description": "Medication form label for drops." },
+
+  "medicationFormInhaler": "Inhalador",
+  "@medicationFormInhaler": { "description": "Medication form label for inhaler." },
+
+  "medicationFormPatch": "Parche",
+  "@medicationFormPatch": { "description": "Medication form label for patch." },
+
+  "medicationFormOther": "Otro",
+  "@medicationFormOther": { "description": "Medication form label for other." },
+
+  "dayMon": "L",
+  "@dayMon": { "description": "Short label for Monday." },
+
+  "dayTue": "M",
+  "@dayTue": { "description": "Short label for Tuesday." },
+
+  "dayWed": "X",
+  "@dayWed": { "description": "Short label for Wednesday." },
+
+  "dayThu": "J",
+  "@dayThu": { "description": "Short label for Thursday." },
+
+  "dayFri": "V",
+  "@dayFri": { "description": "Short label for Friday." },
+
+  "daySat": "S",
+  "@daySat": { "description": "Short label for Saturday." },
+
+  "daySun": "D",
+  "@daySun": { "description": "Short label for Sunday." },
+
+  "colorTokenLabel": "Color",
+  "@colorTokenLabel": { "description": "Input label for medication color token." },
+
+  "colorTokenPrimary": "Principal",
+  "@colorTokenPrimary": { "description": "Color token option: primary." },
+
+  "colorTokenSecondary": "Secundario",
+  "@colorTokenSecondary": { "description": "Color token option: secondary." },
+
+  "colorTokenTertiary": "Terciario",
+  "@colorTokenTertiary": { "description": "Color token option: tertiary." },
+
+  "brandSanctuary": "Sanctuary",
+  "schedulerHeading": "Programa tu medicación",
+  "schedulerSubheading": "La precisión es clave para tu recuperación. Define cómo y cuándo tomar tu dosis.",
+  "recurrenceTitle": "Recurrencia",
+  "recurrenceDaily": "Diaria",
+  "recurrenceDailyDesc": "Cada día, ritmo regular",
+  "recurrenceSpecificDays": "Días específicos",
+  "recurrenceSpecificDaysDesc": "Selecciona días de la semana",
+  "durationTitle": "Duración",
+  "durationContinuous": "Continuo",
+  "durationContinuousDesc": "Tratamiento continuo sin fecha de fin.",
+  "durationSpecificEnd": "Fecha de fin específica",
+  "durationSpecificEndDesc": "Establece una fecha fija para detener la medicación.",
+  "schedulerStepLabel": "Paso 2 de 3",
+  "frequencyModeTitle": "Modo de frecuencia",
+  "frequencyModeSetTimes": "Establecer horas",
+  "frequencyModeInterval": "Intervalo",
+  "doseLabel": "Dosis {number}",
+  "@doseLabel": {
+    "placeholders": {
+      "number": { "type": "int" }
+    }
+  },
+  "confirmScheduleButton": "Confirmar horario",
+  "trackerSubtitle": "Tienes {count} dosis restantes para hoy. Sigue así.",
+  "@trackerSubtitle": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "trackerUpcoming": "Próximo",
+  "trackerScheduled": "Programado",
+  "trackerMissedAlert": "VENCIDA",
+  "trackerLogAsTaken": "Registrar como tomado",
+  "trackerStreak": "RACHA",
+  "trackerAdherence": "ADHERENCIA",
+  "trackerDays": "días",
+  "trackerWeekly": "semanal",
+  "trackerStreakTooltip": "Días consecutivos en los que has tomado todas tus dosis",
+  "trackerAdherenceTooltip": "Porcentaje de dosis tomadas en los últimos 7 días",
+  "taxonomyTitle": "Taxonomía de Medicamentos",
+  "taxonomySubtitle": "Organiza y filtra tu régimen de salud por condición médica o categoría funcional.",
+  "searchGroupsPlaceholder": "Buscar grupos...",
+  "segmentCategories": "Categorías",
+  "segmentDiseases": "Enfermedades",
+  "createCategoryButton": "Crear Categoría",
+  "itemsCount": "{count, plural, =1{1 item} other{{count} items}}",
+  "@itemsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "descriptionLabel": "Descripción",
+  "createDiseaseButton": "Crear Enfermedad",
+
+  "addMedicationStepLabel": "Paso 1 de 3",
+  "@addMedicationStepLabel": { "description": "Step indicator on the add-medication wizard screen." },
+
+  "addMedicationHeading": "Agrega tu medicamento",
+  "@addMedicationHeading": { "description": "Main heading on the add-medication wizard screen." },
+
+  "addMedicationSubheading": "Completa los datos del medicamento antes de definir su horario.",
+  "@addMedicationSubheading": { "description": "Subheading on the add-medication wizard screen." },
+
+  "newCategoryButton": "Nueva categoría",
+  "@newCategoryButton": { "description": "Inline button to create a new taxonomy category from the medication form." },
+
+  "nextButton": "Siguiente",
+  "@nextButton": { "description": "Button that advances to the next wizard step." },
+
+  "welcomeContinueButton": "Continuar",
+  "@welcomeContinueButton": { "description": "CTA button on the daily greeting screen." },
+
+  "welcomeQuoteOfTheDayLabel": "FRASE DEL DÍA",
+  "@welcomeQuoteOfTheDayLabel": { "description": "Label above the daily motivational quote card." },
+
+  "medicationListSubtitle": "Administra tu régimen de medicamentos",
+  "@medicationListSubtitle": { "description": "Subtitle on the medication list screen." },
+
+  "editMedicationHeading": "Editar medicamento",
+  "@editMedicationHeading": { "description": "Main heading on the edit-medication screen." },
+
+  "editMedicationSubheading": "Actualiza los datos de tu medicamento.",
+  "@editMedicationSubheading": { "description": "Subheading on the edit-medication screen." },
+
+  "editMedicationStepLabel": "Editar",
+  "@editMedicationStepLabel": { "description": "Step indicator label on the edit-medication screen." },
+
+  "deleteMedicationTitle": "Eliminar medicamento",
+  "@deleteMedicationTitle": { "description": "Title of the delete-medication confirmation dialog." },
+
+  "deleteMedicationConfirmation": "¿Estás seguro de eliminar {name}? Se eliminarán también sus horarios y dosis programadas.",
+  "@deleteMedicationConfirmation": {
+    "description": "Body text of the delete-medication confirmation dialog.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "deleteButton": "Eliminar",
+  "@deleteButton": { "description": "Destructive action label for delete." },
+
+  "medicationDeletedMessage": "Medicamento eliminado",
+  "@medicationDeletedMessage": { "description": "Snackbar message after a medication is deleted." },
+
+  "searchMedicationsPlaceholder": "Buscar medicamentos...",
+  "@searchMedicationsPlaceholder": { "description": "Placeholder text for the medication search field." },
+
+  "onboardingTitle": "Bienvenido a MyPills",
+  "onboardingSubtitle": "Cuéntanos un poco sobre ti para personalizar tu experiencia",
+  "onboardingNameLabel": "Tu nombre",
+  "onboardingBirthDateLabel": "Fecha de nacimiento",
+  "onboardingGenderLabel": "Género",
+  "onboardingGenderMale": "Masculino",
+  "onboardingGenderFemale": "Femenino",
+  "onboardingGenderOther": "Otro",
+  "onboardingPhotoPrompt": "Toca para agregar tu foto",
+  "onboardingPhotoCamera": "Tomar foto",
+  "onboardingPhotoGallery": "Elegir de la galería",
+  "onboardingStartButton": "Comenzar",
+
+  "editProfileTitle": "Editar perfil",
+  "editProfileSaveButton": "Guardar cambios",
+  "editProfileChangePhoto": "Cambiar foto",
+
+  "skipForNowButton": "Saltar por ahora",
+  "@skipForNowButton": { "description": "Button to skip optional wizard step and go to next screen." },
+
+  "errorNameRequired": "El nombre es requerido",
+  "@errorNameRequired": { "description": "Validation error when medication name is empty." },
+
+  "errorCategoryRequired": "Selecciona una categoría primero",
+  "@errorCategoryRequired": { "description": "Validation error when no category is selected." },
+
+  "activeSchedulesTitle": "Horarios activos",
+  "@activeSchedulesTitle": { "description": "Section title listing active schedules for a medication." },
+
+  "noSchedulesYet": "Sin horarios configurados",
+  "@noSchedulesYet": { "description": "Empty state when a medication has no schedules." },
+
+  "deleteScheduleTitle": "Eliminar horario",
+  "@deleteScheduleTitle": { "description": "Title of the delete-schedule confirmation dialog." },
+
+  "deleteScheduleConfirmation": "¿Eliminar este horario? Las dosis futuras se cancelarán.",
+  "@deleteScheduleConfirmation": { "description": "Body text of the delete-schedule confirmation dialog." },
+
+  "scheduleDeletedMessage": "Horario eliminado",
+  "@scheduleDeletedMessage": { "description": "Snackbar message after a schedule is deleted." },
+
+  "addScheduleButton": "Agregar horario",
+  "@addScheduleButton": { "description": "Button to add a new schedule for a medication." },
+
+  "trackerScrollPastHint": "↑ Días anteriores",
+  "@trackerScrollPastHint": { "description": "Hint shown above past-day content; scroll up to reveal more." },
+
+  "trackerScrollFutureHint": "↓ Días próximos",
+  "@trackerScrollFutureHint": { "description": "Hint shown below future-day content; scroll down to reveal more." },
+
+  "settingsTitle": "Configuración",
+  "settingsProfileSection": "Perfil",
+  "settingsInAppRemindersSection": "Recordatorios en la app",
+  "settingsInAppRemindersToggle": "Banners de recordatorio",
+  "settingsInAppRemindersDesc": "Mostrar un aviso en pantalla cuando sea hora de tu dosis y la app esté abierta.",
+  "settingsPushNotificationsSection": "Notificaciones Push",
+  "settingsPushNotificationsToggle": "Notificaciones del sistema",
+  "settingsPushNotificationsDesc": "Recibir alertas incluso cuando la app esté cerrada.",
+  "settingsAnticipationLabel": "Avisar con anticipación",
+  "settingsAnticipationExact": "Hora exacta",
+  "settingsAnticipationMinutes": "{minutes} min antes",
+  "@settingsAnticipationMinutes": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "settingsPermissionButton": "Otorgar permiso",
+  "settingsCalendarSection": "Calendario del dispositivo",
+  "settingsCalendarToggle": "Sincronizar calendario",
+  "settingsCalendarDesc": "Agrega automáticamente tus dosis al calendario de tu teléfono (Google/Outlook).",
+  "settingsComingSoon": "Próximamente",
+  "settingsCalendarSelectTitle": "Seleccionar calendario destino",
+  "settingsCalendarPermissionDenied": "Permiso denegado. Habilita el acceso al calendario en los ajustes del sistema.",
+
+  "notificationTitle": "Hora de tu medicación",
+  "notificationBody": "Es hora de tomar {medicationName}",
+  "@notificationBody": {
+    "placeholders": {
+      "medicationName": { "type": "String" }
+    }
+  },
+  "inAppReminderTitle": "Recordatorio",
+  "inAppReminderDismiss": "Desliza para ocultar"
 }
