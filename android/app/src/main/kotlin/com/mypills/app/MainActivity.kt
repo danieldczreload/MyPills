@@ -1,4 +1,4 @@
-package com.mypills.app.my_pills
+package com.mypills.app
 
 import io.flutter.embedding.android.FlutterActivity
 
