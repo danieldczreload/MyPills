@@ -65,6 +65,18 @@ sealed class Failure with _$Failure {
   /// localized message — never embed translated strings in the domain layer.
   const factory Failure.validation({required ValidationCode code}) = Validation;
 
+  /// Authentication failed or token is invalid/expired.
+  const factory Failure.unauthorized() = Unauthorized;
+
+  /// Network connection failed or timeout.
+  const factory Failure.network() = NetworkFailure;
+
+  /// Server returned an error status code.
+  const factory Failure.server({
+    required int statusCode,
+    String? message,
+  }) = ServerFailure;
+
   /// An unexpected error occurred — wraps the original error object.
   ///
   /// Typed as [Object] rather than [Exception] because Dart allows throwing

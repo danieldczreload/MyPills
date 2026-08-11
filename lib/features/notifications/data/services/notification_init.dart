@@ -11,12 +11,13 @@ const String kMedicationChannelDescription =
 /// Whether the device can fire exact alarms. Cached after [initNotifications].
 bool exactAlarmsAllowed = false;
 
-const AndroidNotificationChannel _medicationChannel = AndroidNotificationChannel(
-  kMedicationChannelId,
-  kMedicationChannelName,
-  description: kMedicationChannelDescription,
-  importance: Importance.max,
-);
+const AndroidNotificationChannel _medicationChannel =
+    AndroidNotificationChannel(
+      kMedicationChannelId,
+      kMedicationChannelName,
+      description: kMedicationChannelDescription,
+      importance: Importance.max,
+    );
 
 Future<FlutterLocalNotificationsPlugin> initNotifications() async {
   mlog('mypills.notif', 'initNotifications start');
@@ -30,9 +31,10 @@ Future<FlutterLocalNotificationsPlugin> initNotifications() async {
   mlog('mypills.notif', 'plugin.initialize done');
 
   if (Platform.isAndroid) {
-    final android = plugin.resolvePlatformSpecificImplementation<
-      AndroidFlutterLocalNotificationsPlugin
-    >();
+    final android = plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
     if (android == null) {
       mlog('mypills.notif', 'android plugin impl is null');
       return plugin;

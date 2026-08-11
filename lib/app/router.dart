@@ -24,8 +24,9 @@ import 'package:my_pills/l10n/app_localizations.dart';
 /// Global key for the root [Navigator]. Used by widgets mounted in
 /// `MaterialApp.builder` (which sit above the Navigator) to reach into the
 /// router's [OverlayState] — e.g. the in-app reminder banner.
-final GlobalKey<NavigatorState> rootNavigatorKey =
-    GlobalKey<NavigatorState>(debugLabel: 'rootNavigator');
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(
+  debugLabel: 'rootNavigator',
+);
 
 /// Application-wide route configuration.
 ///

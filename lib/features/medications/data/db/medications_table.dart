@@ -12,4 +12,12 @@ class MedicationsTable extends Table {
   TextColumn get colorToken => text().withLength(min: 1, max: 80)();
 
   TextColumn get notes => text().nullable()();
+
+  TextColumn get clientId => text().nullable()();
+
+  DateTimeColumn get serverUpdatedAt => dateTime().nullable()();
+
+  TextColumn get syncStatus => text().withDefault(const Constant('synced'))();
+
+  BoolColumn get isTombstone => boolean().withDefault(const Constant(false))();
 }

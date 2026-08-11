@@ -58,15 +58,16 @@ class InAppReminderService {
   }) {
     final now = (clock ?? _clock)();
     final lead = Duration(minutes: _minutesBefore());
-    final pending = _currentDoses
-        .where(
-          (d) =>
-              d.status == DoseStatus.pending &&
-              !_notifiedDoseIds.contains(d.id) &&
-              d.scheduledAt.add(_maxLateness).isAfter(now),
-        )
-        .toList()
-      ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+    final pending =
+        _currentDoses
+            .where(
+              (d) =>
+                  d.status == DoseStatus.pending &&
+                  !_notifiedDoseIds.contains(d.id) &&
+                  d.scheduledAt.add(_maxLateness).isAfter(now),
+            )
+            .toList()
+          ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
     if (pending.isEmpty) return null;
     final d = pending.first;
     return (

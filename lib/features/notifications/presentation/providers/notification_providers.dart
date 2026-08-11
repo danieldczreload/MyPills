@@ -29,7 +29,8 @@ final notificationPreferencesRepositoryProvider =
       return SharedPrefsNotificationPreferencesRepository(prefs);
     });
 
-class NotificationPreferencesNotifier extends Notifier<NotificationPreferences> {
+class NotificationPreferencesNotifier
+    extends Notifier<NotificationPreferences> {
   late final NotificationPreferencesRepository _repository;
 
   @override
@@ -49,10 +50,9 @@ class NotificationPreferencesNotifier extends Notifier<NotificationPreferences> 
 }
 
 final notificationPreferencesProvider =
-    NotifierProvider<
-      NotificationPreferencesNotifier,
-      NotificationPreferences
-    >(NotificationPreferencesNotifier.new);
+    NotifierProvider<NotificationPreferencesNotifier, NotificationPreferences>(
+      NotificationPreferencesNotifier.new,
+    );
 
 final flutterLocalNotificationsPluginProvider =
     Provider<FlutterLocalNotificationsPlugin>((ref) {

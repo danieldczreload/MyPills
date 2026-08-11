@@ -214,8 +214,7 @@ class MedicationDetailScreen extends ConsumerWidget {
               serene.spacing.lg,
               serene.spacing.xl,
               serene.spacing.lg,
-              serene.spacing.xxxxl +
-                  MediaQuery.paddingOf(context).bottom,
+              serene.spacing.xxxxl + MediaQuery.paddingOf(context).bottom,
             ),
             sliver: SliverToBoxAdapter(
               child: OutlinedButton.icon(
@@ -395,10 +394,12 @@ class _ScheduleCard extends StatelessWidget {
       DailyIntervalSchedule(:final startAt) => [startAt],
       SpecificDaysSchedule(:final timesOfDay) => timesOfDay,
     };
-    return times.map((t) {
-      final h = t.hour.toString().padLeft(2, '0');
-      final m = t.minute.toString().padLeft(2, '0');
-      return '$h:$m';
-    }).join(', ');
+    return times
+        .map((t) {
+          final h = t.hour.toString().padLeft(2, '0');
+          final m = t.minute.toString().padLeft(2, '0');
+          return '$h:$m';
+        })
+        .join(', ');
   }
 }

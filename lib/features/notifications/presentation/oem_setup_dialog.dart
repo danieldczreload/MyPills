@@ -68,8 +68,7 @@ _OemContent _contentFor(OemFamily f) => switch (f) {
     steps: [
       (
         title: 'Inicio automático',
-        body:
-            'Ajustes → Apps → Permisos → Inicio automático → activa MyPills.',
+        body: 'Ajustes → Apps → Permisos → Inicio automático → activa MyPills.',
       ),
       (
         title: 'Sin restricción de batería',

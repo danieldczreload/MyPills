@@ -21,6 +21,14 @@ class DoseEventsTable extends Table {
 
   DateTimeColumn get takenAtUtc => dateTime().nullable()();
 
+  TextColumn get clientId => text().nullable()();
+
+  DateTimeColumn get serverUpdatedAt => dateTime().nullable()();
+
+  TextColumn get syncStatus => text().withDefault(const Constant('synced'))();
+
+  BoolColumn get isTombstone => boolean().withDefault(const Constant(false))();
+
   List<Index> get indexes => [
     Index(
       'dose_events_scheduled_at_idx',

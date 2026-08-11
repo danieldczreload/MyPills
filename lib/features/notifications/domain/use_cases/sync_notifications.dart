@@ -74,16 +74,17 @@ class SyncNotifications {
   SyncReport? lastReport;
 
   Future<void> call() {
-    _currentSync = _currentSync
-        .then((_) => _doSync())
-        .catchError((Object e, StackTrace st) {
-          developer.log(
-            'sync chain error: $e',
-            name: 'mypills.sync',
-            error: e,
-            stackTrace: st,
-          );
-        });
+    _currentSync = _currentSync.then((_) => _doSync()).catchError((
+      Object e,
+      StackTrace st,
+    ) {
+      developer.log(
+        'sync chain error: $e',
+        name: 'mypills.sync',
+        error: e,
+        stackTrace: st,
+      );
+    });
     return _currentSync;
   }
 

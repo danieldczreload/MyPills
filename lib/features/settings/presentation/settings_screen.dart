@@ -389,8 +389,7 @@ class _NotificationDiagnosticsState
       _notifGranted = notifStatus.isGranted;
       _exactGranted = exact;
       _batteryIgnored = batteryStatus.isGranted;
-      _calendarGranted =
-          calStatus.isSuccess && (calStatus.data ?? false);
+      _calendarGranted = calStatus.isSuccess && (calStatus.data ?? false);
       _lastSyncReport = report?.oneLine;
     });
   }

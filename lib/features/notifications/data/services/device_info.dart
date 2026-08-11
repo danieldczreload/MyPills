@@ -63,9 +63,7 @@ class DeviceManufacturerInfo {
     if (m.contains('huawei') || m.contains('honor')) {
       return _cachedFamily = OemFamily.huawei;
     }
-    if (m.contains('xiaomi') ||
-        m.contains('redmi') ||
-        m.contains('poco')) {
+    if (m.contains('xiaomi') || m.contains('redmi') || m.contains('poco')) {
       return _cachedFamily = OemFamily.xiaomi;
     }
     if (m.contains('oppo') || m.contains('realme')) {

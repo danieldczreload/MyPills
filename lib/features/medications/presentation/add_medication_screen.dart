@@ -83,250 +83,252 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(
-          serene.spacing.lg,
-          120,
-          serene.spacing.lg,
-          serene.spacing.xxxxl + MediaQuery.paddingOf(context).bottom,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              (_isEditMode
-                      ? l10n.editMedicationStepLabel
-                      : l10n.addMedicationStepLabel)
-                  .toUpperCase(),
-              style: theme.textTheme.labelMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.primary,
-                letterSpacing: 1.5,
+          padding: EdgeInsets.fromLTRB(
+            serene.spacing.lg,
+            120,
+            serene.spacing.lg,
+            serene.spacing.xxxxl + MediaQuery.paddingOf(context).bottom,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                (_isEditMode
+                        ? l10n.editMedicationStepLabel
+                        : l10n.addMedicationStepLabel)
+                    .toUpperCase(),
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.primary,
+                  letterSpacing: 1.5,
+                ),
               ),
-            ),
-            SizedBox(height: serene.spacing.xs),
-            Text(
-              _isEditMode
-                  ? l10n.editMedicationHeading
-                  : l10n.addMedicationHeading,
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                height: 1.2,
+              SizedBox(height: serene.spacing.xs),
+              Text(
+                _isEditMode
+                    ? l10n.editMedicationHeading
+                    : l10n.addMedicationHeading,
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  height: 1.2,
+                ),
               ),
-            ),
-            SizedBox(height: serene.spacing.sm),
-            Text(
-              _isEditMode
-                  ? l10n.editMedicationSubheading
-                  : l10n.addMedicationSubheading,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+              SizedBox(height: serene.spacing.sm),
+              Text(
+                _isEditMode
+                    ? l10n.editMedicationSubheading
+                    : l10n.addMedicationSubheading,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
-            ),
-            SizedBox(height: serene.spacing.xl),
-            SoftInputField(
-              controller: _nameController,
-              labelText: l10n.nameLabel,
-              validator: (v) => (v == null || v.trim().isEmpty)
-                  ? l10n.errorNameRequired
-                  : null,
-            ),
-            SizedBox(height: serene.spacing.lg),
-            SoftDropdownField<MedicationForm>(
-              value: _form,
-              labelText: l10n.medicationFormLabel,
-              items: [
-                DropdownMenuItem(
-                  value: MedicationForm.pill,
-                  child: Text(l10n.medicationFormPill),
-                ),
-                DropdownMenuItem(
-                  value: MedicationForm.capsule,
-                  child: Text(l10n.medicationFormCapsule),
-                ),
-                DropdownMenuItem(
-                  value: MedicationForm.liquid,
-                  child: Text(l10n.medicationFormLiquid),
-                ),
-                DropdownMenuItem(
-                  value: MedicationForm.injection,
-                  child: Text(l10n.medicationFormInjection),
-                ),
-                DropdownMenuItem(
-                  value: MedicationForm.drops,
-                  child: Text(l10n.medicationFormDrops),
-                ),
-                DropdownMenuItem(
-                  value: MedicationForm.inhaler,
-                  child: Text(l10n.medicationFormInhaler),
-                ),
-                DropdownMenuItem(
-                  value: MedicationForm.patch,
-                  child: Text(l10n.medicationFormPatch),
-                ),
-                DropdownMenuItem(
-                  value: MedicationForm.other,
-                  child: Text(l10n.medicationFormOther),
-                ),
-              ],
-              onChanged: (v) {
-                if (v != null) setState(() => _form = v);
-              },
-            ),
-            SizedBox(height: serene.spacing.lg),
-            groupsAsync.when(
-              data: (groups) {
-                // In edit mode, resolve the group id from the category name
-                // once data is available (only on first build).
-                if (_isEditMode && _selectedGroupId == null) {
-                  final cat = widget.medication!.category;
-                  final match = groups.where((g) => g.name == cat).firstOrNull;
-                  if (match != null) {
-                    // schedule the state update after the current build frame
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted) {
-                        setState(() => _selectedGroupId = match.id);
-                      }
-                    });
+              SizedBox(height: serene.spacing.xl),
+              SoftInputField(
+                controller: _nameController,
+                labelText: l10n.nameLabel,
+                validator: (v) => (v == null || v.trim().isEmpty)
+                    ? l10n.errorNameRequired
+                    : null,
+              ),
+              SizedBox(height: serene.spacing.lg),
+              SoftDropdownField<MedicationForm>(
+                value: _form,
+                labelText: l10n.medicationFormLabel,
+                items: [
+                  DropdownMenuItem(
+                    value: MedicationForm.pill,
+                    child: Text(l10n.medicationFormPill),
+                  ),
+                  DropdownMenuItem(
+                    value: MedicationForm.capsule,
+                    child: Text(l10n.medicationFormCapsule),
+                  ),
+                  DropdownMenuItem(
+                    value: MedicationForm.liquid,
+                    child: Text(l10n.medicationFormLiquid),
+                  ),
+                  DropdownMenuItem(
+                    value: MedicationForm.injection,
+                    child: Text(l10n.medicationFormInjection),
+                  ),
+                  DropdownMenuItem(
+                    value: MedicationForm.drops,
+                    child: Text(l10n.medicationFormDrops),
+                  ),
+                  DropdownMenuItem(
+                    value: MedicationForm.inhaler,
+                    child: Text(l10n.medicationFormInhaler),
+                  ),
+                  DropdownMenuItem(
+                    value: MedicationForm.patch,
+                    child: Text(l10n.medicationFormPatch),
+                  ),
+                  DropdownMenuItem(
+                    value: MedicationForm.other,
+                    child: Text(l10n.medicationFormOther),
+                  ),
+                ],
+                onChanged: (v) {
+                  if (v != null) setState(() => _form = v);
+                },
+              ),
+              SizedBox(height: serene.spacing.lg),
+              groupsAsync.when(
+                data: (groups) {
+                  // In edit mode, resolve the group id from the category name
+                  // once data is available (only on first build).
+                  if (_isEditMode && _selectedGroupId == null) {
+                    final cat = widget.medication!.category;
+                    final match = groups
+                        .where((g) => g.name == cat)
+                        .firstOrNull;
+                    if (match != null) {
+                      // schedule the state update after the current build frame
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) {
+                          setState(() => _selectedGroupId = match.id);
+                        }
+                      });
+                    }
                   }
-                }
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _CategoryField(
-                      groups: groups,
-                      selectedId: _selectedGroupId,
-                      onChanged: (id) {
-                        setState(() {
-                          _selectedGroupId = id;
-                          _categoryError = null;
-                        });
-                      },
-                      onCreateNew: () => _openCreateCategory(groups),
-                    ),
-                    if (_categoryError != null)
-                      Padding(
-                        padding: EdgeInsets.only(
-                          top: serene.spacing.xs,
-                          left: serene.spacing.lg,
-                        ),
-                        child: Text(
-                          _categoryError!,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.error,
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _CategoryField(
+                        groups: groups,
+                        selectedId: _selectedGroupId,
+                        onChanged: (id) {
+                          setState(() {
+                            _selectedGroupId = id;
+                            _categoryError = null;
+                          });
+                        },
+                        onCreateNew: () => _openCreateCategory(groups),
+                      ),
+                      if (_categoryError != null)
+                        Padding(
+                          padding: EdgeInsets.only(
+                            top: serene.spacing.xs,
+                            left: serene.spacing.lg,
+                          ),
+                          child: Text(
+                            _categoryError!,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.error,
+                            ),
                           ),
                         ),
-                      ),
-                  ],
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (_, _) => Text(l10n.errorUnexpected),
-            ),
-            SizedBox(height: serene.spacing.xl),
-            Text(
-              l10n.colorTokenLabel,
-              style: theme.textTheme.titleSmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+                    ],
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (_, _) => Text(l10n.errorUnexpected),
               ),
-            ),
-            SizedBox(height: serene.spacing.md),
-            Row(
-              children: [
-                _colorChip(
-                  label: l10n.colorTokenPrimary,
-                  token: 'primary',
-                  color: theme.colorScheme.primary,
-                ),
-                SizedBox(width: serene.spacing.sm),
-                _colorChip(
-                  label: l10n.colorTokenSecondary,
-                  token: 'secondary',
-                  color: theme.colorScheme.secondary,
-                ),
-                SizedBox(width: serene.spacing.sm),
-                _colorChip(
-                  label: l10n.colorTokenTertiary,
-                  token: 'tertiary',
-                  color: theme.colorScheme.tertiary,
-                ),
-              ],
-            ),
-            SizedBox(height: serene.spacing.lg),
-            SoftInputField(
-              controller: _notesController,
-              labelText: l10n.notesLabel,
-              maxLines: 3,
-            ),
-            SizedBox(height: serene.spacing.xxxxl),
-            groupsAsync.maybeWhen(
-              data: (groups) => GradientPrimaryButton(
-                label: _isEditMode ? l10n.saveButton : l10n.nextButton,
-                onPressed: _isSaving
-                    ? null
-                    : () => _isEditMode ? _update(groups) : _create(groups),
-              ),
-              orElse: () => const SizedBox.shrink(),
-            ),
-            // ── Schedules — only in edit mode ──────────────────────────────
-            if (_isEditMode) ...[
-              SizedBox(height: serene.spacing.lg),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () => _openSchedulesSheet(context),
-                  icon: const Icon(Icons.schedule_outlined),
-                  label: Text(l10n.activeSchedulesTitle),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: serene.radius.md,
-                    ),
-                  ),
+              SizedBox(height: serene.spacing.xl),
+              Text(
+                l10n.colorTokenLabel,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-            ],
-            // ── Delete action — only in edit mode ──────────────────────────
-            if (_isEditMode) ...[
-              SizedBox(height: serene.spacing.lg),
+              SizedBox(height: serene.spacing.md),
               Row(
                 children: [
-                  Expanded(
-                    child: Divider(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.outlineVariant.withValues(alpha: 0.5),
-                    ),
+                  _colorChip(
+                    label: l10n.colorTokenPrimary,
+                    token: 'primary',
+                    color: theme.colorScheme.primary,
+                  ),
+                  SizedBox(width: serene.spacing.sm),
+                  _colorChip(
+                    label: l10n.colorTokenSecondary,
+                    token: 'secondary',
+                    color: theme.colorScheme.secondary,
+                  ),
+                  SizedBox(width: serene.spacing.sm),
+                  _colorChip(
+                    label: l10n.colorTokenTertiary,
+                    token: 'tertiary',
+                    color: theme.colorScheme.tertiary,
                   ),
                 ],
               ),
               SizedBox(height: serene.spacing.lg),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: _isSaving ? null : _delete,
-                  icon: const Icon(Icons.delete_outline_rounded),
-                  label: Text(l10n.deleteMedicationTitle),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Theme.of(context).colorScheme.error,
-                    side: BorderSide(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.error.withValues(alpha: 0.4),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: Theme.of(
-                        context,
-                      ).extension<SereneTheme>()!.radius.md,
+              SoftInputField(
+                controller: _notesController,
+                labelText: l10n.notesLabel,
+                maxLines: 3,
+              ),
+              SizedBox(height: serene.spacing.xxxxl),
+              groupsAsync.maybeWhen(
+                data: (groups) => GradientPrimaryButton(
+                  label: _isEditMode ? l10n.saveButton : l10n.nextButton,
+                  onPressed: _isSaving
+                      ? null
+                      : () => _isEditMode ? _update(groups) : _create(groups),
+                ),
+                orElse: () => const SizedBox.shrink(),
+              ),
+              // ── Schedules — only in edit mode ──────────────────────────────
+              if (_isEditMode) ...[
+                SizedBox(height: serene.spacing.lg),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _openSchedulesSheet(context),
+                    icon: const Icon(Icons.schedule_outlined),
+                    label: Text(l10n.activeSchedulesTitle),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: serene.radius.md,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              SizedBox(height: serene.spacing.lg),
+              ],
+              // ── Delete action — only in edit mode ──────────────────────────
+              if (_isEditMode) ...[
+                SizedBox(height: serene.spacing.lg),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Divider(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.outlineVariant.withValues(alpha: 0.5),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: serene.spacing.lg),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _isSaving ? null : _delete,
+                    icon: const Icon(Icons.delete_outline_rounded),
+                    label: Text(l10n.deleteMedicationTitle),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.error,
+                      side: BorderSide(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.error.withValues(alpha: 0.4),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: Theme.of(
+                          context,
+                        ).extension<SereneTheme>()!.radius.md,
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: serene.spacing.lg),
+              ],
             ],
-          ],
+          ),
         ),
-      ),
       ),
     );
   }

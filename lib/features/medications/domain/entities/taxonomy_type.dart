@@ -1,7 +1,6 @@
 enum TaxonomyType {
   category,
-  disease
-  ;
+  disease;
 
   static TaxonomyType fromString(String value) {
     return TaxonomyType.values.firstWhere(

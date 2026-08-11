@@ -24,10 +24,10 @@ void main() {
 
     // Wait for entry and shimmer animations
     await tester.pumpAndSettle();
-    
+
     // Wait for the Future.delayed(200ms) in _runSequence
     await tester.pump(const Duration(milliseconds: 250));
-    
+
     // Wait for exit animation and navigation
     await tester.pumpAndSettle();
   });

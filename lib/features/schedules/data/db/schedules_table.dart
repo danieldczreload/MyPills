@@ -18,4 +18,12 @@ class SchedulesTable extends Table {
   DateTimeColumn get startDateUtc => dateTime()();
 
   DateTimeColumn get endDateUtc => dateTime().nullable()();
+
+  TextColumn get clientId => text().nullable()();
+
+  DateTimeColumn get serverUpdatedAt => dateTime().nullable()();
+
+  TextColumn get syncStatus => text().withDefault(const Constant('synced'))();
+
+  BoolColumn get isTombstone => boolean().withDefault(const Constant(false))();
 }

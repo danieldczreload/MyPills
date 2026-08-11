@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
+import 'package:my_pills/core/db/outbox_table.dart';
 import 'package:my_pills/features/medications/data/db/medications_dao.dart';
 import 'package:my_pills/features/medications/data/db/medications_table.dart';
 import 'package:my_pills/features/medications/data/db/taxonomy_groups_dao.dart';
@@ -24,6 +25,7 @@ part 'app_database.g.dart';
     SchedulesTable,
     DoseEventsTable,
     TaxonomyGroupsTable,
+    OutboxTable,
   ],
   daos: [MedicationDao, ScheduleDao, DoseEventsDao, TaxonomyGroupsDao],
 )
@@ -31,7 +33,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -40,7 +42,7 @@ class AppDatabase extends _$AppDatabase {
       await into(taxonomyGroupsTable).insert(_defaultCategory);
     },
     onUpgrade: (m, from, to) async {
-      if (from < 3) {
+      if (from < 4) {
         await m.createAll();
       }
     },

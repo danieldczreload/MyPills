@@ -112,7 +112,10 @@ class DeviceCalendarSyncService implements CalendarSyncService {
       mapping.remove(orphanDoseId);
     }
     if (orphans.isNotEmpty) {
-      developer.log('pruned ${orphans.length} orphan event(s)', name: 'mypills.cal');
+      developer.log(
+        'pruned ${orphans.length} orphan event(s)',
+        name: 'mypills.cal',
+      );
     }
 
     for (final dose in events) {

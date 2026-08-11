@@ -53,7 +53,7 @@ class FlutterLocalNotificationScheduler implements NotificationScheduler {
     mlog(
       'mypills.notif',
       'scheduleForDoseEvents count=${doseEvents.length} '
-      'minutesBefore=$minutesBefore mode=$mode tz=${tz.local.name}',
+          'minutesBefore=$minutesBefore mode=$mode tz=${tz.local.name}',
     );
 
     var scheduled = 0;
@@ -99,7 +99,7 @@ class FlutterLocalNotificationScheduler implements NotificationScheduler {
     mlog(
       'mypills.notif',
       'scheduleForDoseEvents done scheduled=$scheduled '
-      'skipped=$skipped failed=$failed',
+          'skipped=$skipped failed=$failed',
     );
   }
 
@@ -112,9 +112,9 @@ class FlutterLocalNotificationScheduler implements NotificationScheduler {
   }) async {
     try {
       // Build the TZDateTime via UTC so a misconfigured tz.local (e.g. when
-       // FlutterTimezone fails and tz.local stays UTC) doesn't shift the
-       // absolute moment. Dart's DateTime knows the device timezone, so
-       // when.toUtc() gives the correct absolute UTC instant.
+      // FlutterTimezone fails and tz.local stays UTC) doesn't shift the
+      // absolute moment. Dart's DateTime knows the device timezone, so
+      // when.toUtc() gives the correct absolute UTC instant.
       final tzWhen = tz.TZDateTime.from(when.toUtc(), tz.UTC);
       mlog(
         'mypills.notif',
