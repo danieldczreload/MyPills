@@ -42,3 +42,11 @@ The client must support triggering diagnostic test notifications for QA.
 - **WHEN** user triggers a test push in diagnostics settings
 - **THEN** client sends `POST /api/v1/notifications/test-push` with body `{ "title": "Test", "body": "Delivery check" }`
 - **AND** expects `200 OK` response `{ "sent": int, "failed": 0 }`.
+
+### Requirement: OEM Battery Optimization Handling
+The client must prompt OEM Android devices (Xiaomi, Huawei, Oppo, Vivo, OnePlus) to disable aggressive battery optimization.
+
+#### Scenario: OEM battery optimization dialog prompt
+- **GIVEN** an Android device from an OEM family requiring manual setup (Xiaomi, Huawei, Oppo, Vivo, OnePlus)
+- **WHEN** push notification permissions are configured
+- **THEN** client invokes `maybeShowOemSetup` to present device-tailored step-by-step instructions.
