@@ -116,6 +116,8 @@ android-sdk/
 
 # Configuraciones locales de herramientas de IA/Asistentes
 .claude/
+.headroom/
+.serena/
 
 # Editor temporary / backup files
 *.swp
