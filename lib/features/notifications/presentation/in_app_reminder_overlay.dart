@@ -4,12 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:my_pills/app/router.dart';
-import 'package:my_pills/core/theme/app_theme.dart';
 import 'package:my_pills/core/theme/serene_theme.dart';
-import 'package:my_pills/core/widgets/sanctuary_app_bar.dart';
 import 'package:my_pills/features/medications/domain/entities/medication.dart';
 import 'package:my_pills/features/medications/presentation/providers/medications_providers.dart';
 import 'package:my_pills/features/notifications/presentation/providers/notification_providers.dart';
+import 'package:my_pills/features/profile/presentation/providers/profile_providers.dart';
 import 'package:my_pills/l10n/app_localizations.dart';
 
 class InAppReminderOverlay extends ConsumerStatefulWidget {
@@ -72,9 +71,10 @@ class _InAppReminderOverlayState extends ConsumerState<InAppReminderOverlay>
 
   void _showOverlay(
     BuildContext context,
-    String medicationName,
-    VoidCallback onDismiss,
-  ) {
+    String medicationName, {
+    String? profileName,
+    required VoidCallback onDismiss,
+  }) {
     if (_overlayEntry != null) {
       _removeOverlay();
     }
@@ -100,23 +100,23 @@ class _InAppReminderOverlayState extends ConsumerState<InAppReminderOverlay>
                   child: Dismissible(
                     key: UniqueKey(),
                     direction: DismissDirection.up,
-                    onDismissed: (_) => onDismiss(),
+                    onDismissed: (_) {
+                      _removeOverlay();
+                    },
                     child: GestureDetector(
                       onTap: () {
-                        onDismiss();
-                        context.goNamed(AppRoutes.today);
+                        _removeOverlay();
+                        context.go(AppRoutes.today);
                       },
                       child: Container(
                         padding: EdgeInsets.all(sereneTheme.spacing.md),
                         decoration: BoxDecoration(
-                          color: colorScheme.surfaceContainerLowest.withOpacity(
-                            0.9,
-                          ),
-                          borderRadius: sereneTheme.radius.lg,
+                          color: colorScheme.surface,
+                          borderRadius: sereneTheme.radius.md,
                           boxShadow: [
                             BoxShadow(
                               color: colorScheme.shadow.withOpacity(0.1),
-                              blurRadius: 20,
+                              blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
                           ],
@@ -145,7 +145,12 @@ class _InAppReminderOverlayState extends ConsumerState<InAppReminderOverlay>
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
-                                    l10n.inAppReminderTitle,
+                                    profileName != null &&
+                                            profileName.isNotEmpty
+                                        ? l10n.inAppReminderTitleWithProfile(
+                                            profileName,
+                                          )
+                                        : l10n.inAppReminderTitle,
                                     style: theme.textTheme.titleMedium
                                         ?.copyWith(
                                           fontWeight: FontWeight.bold,
@@ -153,7 +158,13 @@ class _InAppReminderOverlayState extends ConsumerState<InAppReminderOverlay>
                                         ),
                                   ),
                                   Text(
-                                    l10n.notificationBody(medicationName),
+                                    profileName != null &&
+                                            profileName.isNotEmpty
+                                        ? l10n.notificationBodyWithProfile(
+                                            medicationName,
+                                            profileName,
+                                          )
+                                        : l10n.notificationBody(medicationName),
                                     style: theme.textTheme.bodyMedium?.copyWith(
                                       color: colorScheme.onSurfaceVariant,
                                     ),
@@ -216,14 +227,22 @@ class _InAppReminderOverlayState extends ConsumerState<InAppReminderOverlay>
         }
       }
 
+      final currentProfile = ref.read(currentUserProfileProvider);
+      final profileName = currentProfile?.name;
+
       if (mounted) {
-        _showOverlay(context, medName, () {
-          _animationController.reverse().then((_) {
-            if (mounted) {
-              _removeOverlay();
-            }
-          });
-        });
+        _showOverlay(
+          context,
+          medName,
+          profileName: profileName,
+          onDismiss: () {
+            _animationController.reverse().then((_) {
+              if (mounted) {
+                _removeOverlay();
+              }
+            });
+          },
+        );
       }
     });
 

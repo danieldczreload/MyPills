@@ -40,52 +40,63 @@ void main() {
   });
 
   group('AuthRepositoryImpl', () {
-    test('login returns success and saves tokens on 200 OK', () async {
-      when(
-        () => mockDio.post<Map<String, dynamic>>(
-          '/auth/login',
-          data: any(named: 'data'),
-          options: any(named: 'options'),
-        ),
-      ).thenAnswer(
-        (_) async => Response(
-          statusCode: 200,
-          requestOptions: RequestOptions(path: '/auth/login'),
-          data: {
-            'accessToken': 'acc_123',
-            'refreshToken': 'ref_456',
-            'user': {
+    test(
+      'loginWithGoogle returns success and saves tokens on 200 OK',
+      () async {
+        when(
+          () => mockDio.post<Map<String, dynamic>>(
+            '/auth/google',
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+          ),
+        ).thenAnswer(
+          (_) async => Response(
+            statusCode: 200,
+            requestOptions: RequestOptions(path: '/auth/google'),
+            data: {
+              'token': 'acc_123',
+              'refreshToken': 'ref_456',
+            },
+          ),
+        );
+
+        when(
+          () => mockDio.get<Map<String, dynamic>>('/me'),
+        ).thenAnswer(
+          (_) async => Response(
+            statusCode: 200,
+            requestOptions: RequestOptions(path: '/me'),
+            data: {
               'id': 'usr_1',
               'email': 'user@example.com',
               'name': 'Test User',
             },
-          },
-        ),
-      );
-
-      final result = await repository.login(
-        email: 'user@example.com',
-        password: 'password123',
-      );
-
-      expect(result.isSuccess, isTrue);
-      expect(
-        result.valueOrNull,
-        equals(
-          const AuthUser(
-            id: 'usr_1',
-            email: 'user@example.com',
-            name: 'Test User',
           ),
-        ),
-      );
-      verify(
-        () => mockTokenStorage.saveTokens(
-          accessToken: 'acc_123',
-          refreshToken: 'ref_456',
-        ),
-      ).called(1);
-    });
+        );
+
+        final result = await repository.loginWithGoogle(
+          'valid-user@example.com',
+        );
+
+        expect(result.isSuccess, isTrue);
+        expect(
+          result.valueOrNull,
+          equals(
+            const AuthUser(
+              id: 'usr_1',
+              email: 'user@example.com',
+              name: 'Test User',
+            ),
+          ),
+        );
+        verify(
+          () => mockTokenStorage.saveTokens(
+            accessToken: 'acc_123',
+            refreshToken: 'ref_456',
+          ),
+        ).called(1);
+      },
+    );
 
     test('logout clears token storage', () async {
       when(() => mockDio.post<dynamic>('/auth/logout')).thenAnswer(

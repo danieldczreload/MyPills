@@ -106,6 +106,9 @@ class MedicationSchedulesSheet extends ConsumerWidget {
                         padding: EdgeInsets.only(bottom: serene.spacing.md),
                         child: _ScheduleItem(
                           schedule: s,
+                          onCancelAlerts: () => unawaited(
+                            _cancelScheduleAlerts(context, ref, s),
+                          ),
                           onDelete: () =>
                               unawaited(_deleteSchedule(context, ref, s)),
                         ),
@@ -140,6 +143,50 @@ class MedicationSchedulesSheet extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Future<void> _cancelScheduleAlerts(
+    BuildContext context,
+    WidgetRef ref,
+    Schedule schedule,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.cancelRecurringTitle),
+        content: Text(l10n.cancelRecurringConfirmation),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.cancelButton),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(ctx).colorScheme.primary,
+            ),
+            child: Text(l10n.cancelRecurringButton),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final result = await ref
+        .read(cancelRecurringNotificationsUseCaseProvider)
+        .call(
+          scheduleId: schedule.id,
+        );
+    if (!context.mounted) return;
+    if (result case FailureResult()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.errorUnexpected)),
+      );
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.recurringAlertsCancelledMessage)),
     );
   }
 
@@ -187,15 +234,21 @@ class MedicationSchedulesSheet extends ConsumerWidget {
 }
 
 class _ScheduleItem extends StatelessWidget {
-  const _ScheduleItem({required this.schedule, required this.onDelete});
+  const _ScheduleItem({
+    required this.schedule,
+    required this.onCancelAlerts,
+    required this.onDelete,
+  });
 
   final Schedule schedule;
+  final VoidCallback onCancelAlerts;
   final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final serene = theme.extension<SereneTheme>()!;
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       padding: EdgeInsets.all(serene.spacing.lg),
@@ -249,11 +302,53 @@ class _ScheduleItem extends StatelessWidget {
               ],
             ),
           ),
-          IconButton(
-            onPressed: onDelete,
-            icon: const Icon(Icons.delete_outline_rounded),
-            color: theme.colorScheme.error.withValues(alpha: 0.7),
-            tooltip: 'Eliminar horario',
+          PopupMenuButton<String>(
+            icon: Icon(
+              Icons.more_vert_rounded,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            shape: RoundedRectangleBorder(borderRadius: serene.radius.md),
+            color: theme.colorScheme.surfaceContainerHighest,
+            onSelected: (value) {
+              if (value == 'cancel_alerts') {
+                onCancelAlerts();
+              } else if (value == 'delete') {
+                onDelete();
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'cancel_alerts',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.notifications_off_outlined,
+                      size: 20,
+                      color: theme.colorScheme.primary,
+                    ),
+                    SizedBox(width: serene.spacing.sm),
+                    Text(l10n.cancelRecurringButton),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.delete_outline_rounded,
+                      size: 20,
+                      color: theme.colorScheme.error,
+                    ),
+                    SizedBox(width: serene.spacing.sm),
+                    Text(
+                      l10n.deleteButton,
+                      style: TextStyle(color: theme.colorScheme.error),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),

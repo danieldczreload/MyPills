@@ -541,4 +541,123 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get inAppReminderDismiss => 'Desliza para ocultar';
+
+  @override
+  String get loginTitle => 'Bienvenido a MyPills';
+
+  @override
+  String get loginSubtitle =>
+      'Sincroniza y respalda tus tratamientos médicos de forma segura en la nube.';
+
+  @override
+  String get loginContinueGoogle => 'Continuar con Google';
+
+  @override
+  String get loginContinueMicrosoft => 'Continuar con Microsoft';
+
+  @override
+  String get loginContinueGuest => 'Continuar en modo local (sin cuenta)';
+
+  @override
+  String get loginSyncingAccount => 'Sincronizando tu cuenta...';
+
+  @override
+  String loginErrorGoogle(String error) {
+    return 'Error al iniciar sesión con Google: $error';
+  }
+
+  @override
+  String loginErrorMicrosoft(String error) {
+    return 'Error al iniciar sesión con Microsoft: $error';
+  }
+
+  @override
+  String get settingsCloudSyncSection => 'Sincronización en la Nube';
+
+  @override
+  String get settingsCloudSyncLocalMode => 'Modo local (Sin cuenta)';
+
+  @override
+  String get settingsCloudSyncLocalModeDesc =>
+      'Inicia sesión para sincronizar tus medicamentos.';
+
+  @override
+  String get settingsCloudSyncConnectButton => 'Conectar';
+
+  @override
+  String get settingsCloudSyncSyncButton => 'Sincronizar';
+
+  @override
+  String get settingsCloudSyncLogoutButton => 'Cerrar sesión';
+
+  @override
+  String get settingsCloudSyncSuccess => 'Sincronización completada';
+
+  @override
+  String get settingsCloudSyncLoggedOut => 'Sesión cerrada';
+
+  @override
+  String get greetingGenericWelcome =>
+      'Bienvenido a tu espacio de salud. Mantén el control de tus medicamentos y dosis diarias.';
+
+  @override
+  String get cancelAlertTitle => 'Cancelar recordatorio';
+
+  @override
+  String cancelAlertSubtitle(String medication) {
+    return '¿Qué deseas cancelar para $medication?';
+  }
+
+  @override
+  String get cancelSingleAlertOption => 'Solo esta toma de hoy';
+
+  @override
+  String get cancelSingleAlertOptionDesc =>
+      'Cancela la alerta y evento de calendario de esta dosis.';
+
+  @override
+  String get cancelRecurringAlertsOption => 'Todas las alertas de este horario';
+
+  @override
+  String get cancelRecurringAlertsOptionDesc =>
+      'Cancela todas las alertas futuras y eventos en calendarios sincronizados.';
+
+  @override
+  String get singleAlertCancelledMessage => 'Alerta de hoy cancelada';
+
+  @override
+  String get recurringAlertsCancelledMessage =>
+      'Alertas recurrentes canceladas';
+
+  @override
+  String get cancelRecurringTitle => 'Cancelar alertas recurrentes';
+
+  @override
+  String get cancelRecurringConfirmation =>
+      '¿Deseas cancelar todas las alertas programadas y eventos en calendarios para este horario?';
+
+  @override
+  String get cancelRecurringButton => 'Cancelar alertas';
+
+  @override
+  String get profileSelectorHeading => 'Perfil';
+
+  @override
+  String get profileSelectorSubheading =>
+      'Selecciona a qué perfil corresponde este recordatorio.';
+
+  @override
+  String profileBadgeLabel(String profileName) {
+    return 'Para $profileName';
+  }
+
+  @override
+  String inAppReminderTitleWithProfile(String profileName) {
+    return 'Recordatorio para $profileName';
+  }
+
+  @override
+  String notificationBodyWithProfile(String medication, String profileName) {
+    return 'Es hora de tomar $medication ($profileName)';
+  }
 }

@@ -1,19 +1,22 @@
-import 'package:device_calendar/device_calendar.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:my_pills/app/providers.dart';
 import 'package:my_pills/app/router.dart';
+import 'package:my_pills/core/auth/app_google_sign_in.dart';
+import 'package:my_pills/core/config/env_config.dart';
+import 'package:my_pills/core/errors/failure.dart';
+import 'package:my_pills/core/result/result.dart';
 import 'package:my_pills/core/theme/serene_theme.dart';
+import 'package:my_pills/core/widgets/app_avatar.dart';
 import 'package:my_pills/core/widgets/sanctuary_app_bar.dart';
-import 'package:my_pills/features/notifications/data/services/flutter_local_notification_scheduler.dart';
-import 'package:my_pills/features/notifications/data/services/notification_init.dart';
+import 'package:my_pills/features/auth/presentation/providers/auth_providers.dart';
 import 'package:my_pills/features/notifications/presentation/providers/notification_providers.dart';
-import 'package:timezone/timezone.dart' as tz;
 import 'package:my_pills/features/profile/presentation/providers/profile_providers.dart';
+import 'package:my_pills/features/profile/presentation/widgets/profile_switch_sheet.dart';
 import 'package:my_pills/l10n/app_localizations.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -24,7 +27,6 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _hasNotificationPermission = false;
-  final DeviceCalendarPlugin _calendarPlugin = DeviceCalendarPlugin();
 
   @override
   void initState() {
@@ -45,9 +47,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _hasNotificationPermission = status.isGranted;
     });
     if (status.isGranted) {
-      // Best-effort: ask to ignore battery optimizations so AlarmManager can
-      // wake us. On EMUI/MIUI the OS may still kill us; the Huawei dialog
-      // covers the rest of the setup.
       final battery = await Permission.ignoreBatteryOptimizations.status;
       if (!battery.isGranted) {
         await Permission.ignoreBatteryOptimizations.request();
@@ -57,94 +56,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           .updatePreferences(
             (p) => p.copyWith(pushNotificationsEnabled: true),
           );
-    }
-  }
-
-  Future<void> _toggleCalendarSync(bool enable, AppLocalizations l10n) async {
-    final prefsNotifier = ref.read(notificationPreferencesProvider.notifier);
-
-    if (!enable) {
-      final currentPrefs = ref.read(notificationPreferencesProvider);
-      if (currentPrefs.defaultCalendarId != null) {
-        await ref
-            .read(calendarSyncServiceProvider)
-            .removeAllCalendarEvents(currentPrefs.defaultCalendarId!);
-      }
-      prefsNotifier.updatePreferences(
-        (p) => p.copyWith(calendarSyncEnabled: false, defaultCalendarId: null),
-      );
-      return;
-    }
-
-    var permissionsGranted = await _calendarPlugin.hasPermissions();
-    if (permissionsGranted.isSuccess && !(permissionsGranted.data ?? false)) {
-      permissionsGranted = await _calendarPlugin.requestPermissions();
-      if (!permissionsGranted.isSuccess ||
-          !(permissionsGranted.data ?? false)) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.settingsCalendarPermissionDenied)),
-          );
-        }
-        return;
-      }
-    }
-
-    final calendarsResult = await _calendarPlugin.retrieveCalendars();
-    if (calendarsResult.isSuccess &&
-        calendarsResult.data != null &&
-        calendarsResult.data!.isNotEmpty) {
-      // Sort: writable calendars first, read-only at the bottom.
-      // Google Calendar often reports isReadOnly=true even when writable —
-      // we show all and attempt writes, letting the service handle failures.
-      final calendars = [...calendarsResult.data!]
-        ..sort((a, b) {
-          final aRo = a.isReadOnly ?? true;
-          final bRo = b.isReadOnly ?? true;
-          if (aRo == bRo) return 0;
-          return aRo ? 1 : -1;
-        });
-
-      if (!mounted) return;
-      final selectedCalendar = await showDialog<Calendar>(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: Text(l10n.settingsCalendarSelectTitle),
-            content: SizedBox(
-              width: double.maxFinite,
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: calendars.length,
-                itemBuilder: (context, index) {
-                  final calendar = calendars[index];
-                  final isReadOnly = calendar.isReadOnly ?? false;
-                  return ListTile(
-                    title: Text(calendar.name ?? 'Calendar'),
-                    subtitle: Text(calendar.accountName ?? ''),
-                    trailing: isReadOnly
-                        ? const Tooltip(
-                            message: 'Solo lectura',
-                            child: Icon(Icons.lock_outline, size: 16),
-                          )
-                        : null,
-                    onTap: () => Navigator.pop(context, calendar),
-                  );
-                },
-              ),
-            ),
-          );
-        },
-      );
-
-      if (selectedCalendar != null) {
-        prefsNotifier.updatePreferences(
-          (p) => p.copyWith(
-            calendarSyncEnabled: true,
-            defaultCalendarId: selectedCalendar.id,
-          ),
-        );
-      }
     }
   }
 
@@ -174,6 +85,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           SizedBox(height: sereneTheme.spacing.sm),
           _ProfileCard(),
+          SizedBox(height: sereneTheme.spacing.md),
+          const _CloudAccountCard(),
           SizedBox(height: sereneTheme.spacing.lg),
 
           // In-App Reminders Section
@@ -290,311 +203,79 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ],
                   ),
                 ),
+                const Divider(height: 1),
+                Padding(
+                  padding: EdgeInsets.all(sereneTheme.spacing.md),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      OutlinedButton.icon(
+                        icon: const Icon(
+                          Icons.notifications_active_outlined,
+                          size: 18,
+                        ),
+                        label: const Text('Probar notificación ahora'),
+                        onPressed: () async {
+                          await ref
+                              .read(notificationSchedulerProvider)
+                              .showTest(
+                                title: '🔔 Notificación de prueba',
+                                body:
+                                    '¡Tus recordatorios de MyPills están funcionando correctamente!',
+                              );
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Notificación de prueba enviada'),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                      SizedBox(height: sereneTheme.spacing.xs),
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.timer_outlined, size: 18),
+                        label: const Text('Probar alarma en 10 segundos'),
+                        onPressed: () async {
+                          await ref
+                              .read(notificationSchedulerProvider)
+                              .scheduleTestIn(
+                                delay: const Duration(seconds: 10),
+                                title: '⏰ Recordatorio de prueba (10s)',
+                                body:
+                                    'Es hora de tomar tu medicamento (prueba).',
+                              );
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Alarma programada en 10 segundos. Puedes bloquear la pantalla para probar.',
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ],
           ),
           SizedBox(height: sereneTheme.spacing.lg),
 
-          // Calendar Section (Phase 2)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                l10n.settingsCalendarSection,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: colorScheme.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: sereneTheme.spacing.sm),
-          _SettingsSectionCard(
-            children: [
-              SwitchListTile(
-                title: Text(l10n.settingsCalendarToggle),
-                subtitle: Text(l10n.settingsCalendarDesc),
-                value: prefs.calendarSyncEnabled,
-                onChanged: (val) => _toggleCalendarSync(val, l10n),
-              ),
-            ],
-          ),
-          SizedBox(height: sereneTheme.spacing.lg),
-
-          // Diagnostic section
+          // Cloud Calendars Section (Google & Microsoft OAuth PKCE)
           Text(
-            'Diagnóstico',
+            'Calendarios en la Nube (Google / Outlook)',
             style: theme.textTheme.titleMedium?.copyWith(
               color: colorScheme.primary,
               fontWeight: FontWeight.bold,
             ),
           ),
           SizedBox(height: sereneTheme.spacing.sm),
-          const _NotificationDiagnostics(),
+          const _CloudCalendarCard(),
         ],
       ),
-    );
-  }
-}
-
-class _NotificationDiagnostics extends ConsumerStatefulWidget {
-  const _NotificationDiagnostics();
-
-  @override
-  ConsumerState<_NotificationDiagnostics> createState() =>
-      _NotificationDiagnosticsState();
-}
-
-class _NotificationDiagnosticsState
-    extends ConsumerState<_NotificationDiagnostics> {
-  int _pending = -1;
-  bool _notifGranted = false;
-  bool _exactGranted = false;
-  bool _calendarGranted = false;
-  bool _batteryIgnored = false;
-  String? _lastTestResult;
-  String? _lastSyncReport;
-
-  @override
-  void initState() {
-    super.initState();
-    _refresh();
-  }
-
-  Future<void> _refresh() async {
-    final scheduler = ref.read(notificationSchedulerProvider);
-    final pending = await scheduler.pendingCount();
-    final notifStatus = await Permission.notification.status;
-    final batteryStatus = await Permission.ignoreBatteryOptimizations.status;
-    final calStatus = await DeviceCalendarPlugin().hasPermissions();
-
-    var exact = exactAlarmsAllowed;
-    final plugin = ref.read(flutterLocalNotificationsPluginProvider);
-    final android = plugin
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >();
-    if (android != null) {
-      try {
-        exact = await android.canScheduleExactNotifications() ?? exact;
-        exactAlarmsAllowed = exact;
-      } catch (_) {}
-    }
-
-    final report = ref.read(syncNotificationsUseCaseProvider).lastReport;
-
-    if (!mounted) return;
-    setState(() {
-      _pending = pending;
-      _notifGranted = notifStatus.isGranted;
-      _exactGranted = exact;
-      _batteryIgnored = batteryStatus.isGranted;
-      _calendarGranted = calStatus.isSuccess && (calStatus.data ?? false);
-      _lastSyncReport = report?.oneLine;
-    });
-  }
-
-  void _toast(String msg) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(msg)));
-  }
-
-  Future<void> _requestBattery() async {
-    final status = await Permission.ignoreBatteryOptimizations.request();
-    await _refresh();
-    _toast(
-      status.isGranted
-          ? 'Optimización de batería ignorada'
-          : 'No se concedió. Hazlo manualmente desde Ajustes → Batería',
-    );
-  }
-
-  Future<void> _runTest() async {
-    final scheduler = ref.read(notificationSchedulerProvider);
-    try {
-      await scheduler.showTest(
-        title: 'Prueba MyPills',
-        body: 'Si ves esto, las notificaciones funcionan.',
-      );
-      setState(() => _lastTestResult = 'Enviada');
-      _toast('Notificación enviada');
-    } catch (e) {
-      setState(() => _lastTestResult = 'Error: $e');
-      _toast('Error: $e');
-    }
-    await _refresh();
-  }
-
-  Future<void> _resync() async {
-    await ref.read(syncNotificationsUseCaseProvider).call();
-    await _refresh();
-    _toast('Re-sincronizado · cola: $_pending');
-  }
-
-  Future<void> _listPending() async {
-    final scheduler = ref.read(notificationSchedulerProvider);
-    final list = await scheduler.pendingNotifications();
-    if (!mounted) return;
-    await showDialog<void>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text('Pendientes (${list.length})'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: list.isEmpty
-              ? const Text('No hay notificaciones programadas.')
-              : ListView(
-                  shrinkWrap: true,
-                  children: list
-                      .map(
-                        (e) => ListTile(
-                          dense: true,
-                          title: Text('id=${e.id} · ${e.title ?? "—"}'),
-                          subtitle: Text(e.body ?? ''),
-                        ),
-                      )
-                      .toList(),
-                ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cerrar'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _scheduleTest1Min() async {
-    final scheduler = ref.read(notificationSchedulerProvider);
-    try {
-      await scheduler.scheduleTestIn(
-        delay: const Duration(minutes: 1),
-        title: 'Prueba programada MyPills',
-        body: 'Si la ves, el scheduler funciona end-to-end.',
-      );
-      _toast('Programada para dentro de 1 min. Espera y observa.');
-    } catch (e) {
-      _toast('Error al programar: $e');
-    }
-    await _refresh();
-  }
-
-  String _yesNo(bool v) => v ? 'sí' : 'no';
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final sereneTheme = theme.extension<SereneTheme>()!;
-
-    final inApp = ref.read(inAppReminderServiceProvider);
-    final next = inApp.nextReminder();
-    final lastCheck = inApp.lastCheckAt;
-    String tzName;
-    try {
-      tzName = tz.local.name;
-    } catch (_) {
-      tzName = 'unset';
-    }
-    final mode = exactAlarmsAllowed ? 'exact' : 'inexact';
-    final testDetail = FlutterLocalNotificationScheduler.lastTestDetail;
-
-    return _SettingsSectionCard(
-      children: [
-        Padding(
-          padding: EdgeInsets.all(sereneTheme.spacing.md),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Permiso notificaciones: ${_yesNo(_notifGranted)}'),
-              Text('Alarmas exactas: ${_yesNo(_exactGranted)}'),
-              Text('Ignorar optimización batería: ${_yesNo(_batteryIgnored)}'),
-              Text('Permiso calendario: ${_yesNo(_calendarGranted)}'),
-              Text('Notificaciones en cola: $_pending'),
-              Text('Zona horaria: $tzName · modo: $mode'),
-              if (testDetail != null) ...[
-                const Divider(),
-                Text('Última prueba 1-min:', style: theme.textTheme.bodySmall),
-                Text(testDetail, style: theme.textTheme.bodySmall),
-              ],
-              const Divider(),
-              Text(
-                'In-app · dosis hoy: ${inApp.currentDosesCount} '
-                '(pendientes: ${inApp.pendingDosesCount}) · '
-                'disparadas: ${inApp.firedToday}',
-                style: theme.textTheme.bodySmall,
-              ),
-              Text(
-                'In-app · último check: ${lastCheck ?? "—"}',
-                style: theme.textTheme.bodySmall,
-              ),
-              Text(
-                next == null
-                    ? 'In-app · próxima: —'
-                    : 'In-app · próxima dose=${next.doseId} '
-                          'fireAt=${next.fireAt}',
-                style: theme.textTheme.bodySmall,
-              ),
-              if (_lastSyncReport != null) ...[
-                const Divider(),
-                Text('Último sync:', style: theme.textTheme.bodySmall),
-                Text(_lastSyncReport!, style: theme.textTheme.bodySmall),
-              ],
-              if (_lastTestResult != null) ...[
-                SizedBox(height: sereneTheme.spacing.sm),
-                Text('Última prueba: $_lastTestResult'),
-              ],
-              SizedBox(height: sereneTheme.spacing.md),
-              Wrap(
-                spacing: sereneTheme.spacing.sm,
-                runSpacing: sereneTheme.spacing.sm,
-                children: [
-                  ElevatedButton(
-                    onPressed: _runTest,
-                    child: const Text('Probar push ya'),
-                  ),
-                  ElevatedButton(
-                    onPressed: _scheduleTest1Min,
-                    child: const Text('Probar push en 1 min'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      ref
-                          .read(inAppReminderServiceProvider)
-                          .fireDiagnosticTest();
-                      _toast('Modal disparado (revisa la pantalla)');
-                    },
-                    child: const Text('Probar modal'),
-                  ),
-                  OutlinedButton(
-                    onPressed: _listPending,
-                    child: const Text('Listar pendientes'),
-                  ),
-                  OutlinedButton(
-                    onPressed: _resync,
-                    child: const Text('Re-sincronizar'),
-                  ),
-                  OutlinedButton(
-                    onPressed: () async {
-                      await _refresh();
-                      _toast('Actualizado');
-                    },
-                    child: const Text('Actualizar'),
-                  ),
-                  if (!_batteryIgnored)
-                    OutlinedButton(
-                      onPressed: _requestBattery,
-                      child: const Text('Ignorar batería'),
-                    ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }
@@ -626,14 +307,14 @@ class _SettingsSectionCard extends StatelessWidget {
 class _ProfileCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final profile = ref.watch(userProfileRepositoryProvider).getProfile();
+    final profile = ref.watch(currentUserProfileProvider);
+    final allProfiles = ref.watch(allProfilesProvider);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final sereneTheme = theme.extension<SereneTheme>()!;
-    final l10n = AppLocalizations.of(context);
 
     return InkWell(
-      onTap: () => context.push(AppRoutes.editProfile),
+      onTap: () => showProfileSwitchSheet(context),
       borderRadius: sereneTheme.radius.lg,
       child: Container(
         padding: EdgeInsets.all(sereneTheme.spacing.md),
@@ -641,33 +322,14 @@ class _ProfileCard extends ConsumerWidget {
           color: colorScheme.surfaceContainerLowest,
           borderRadius: sereneTheme.radius.lg,
           border: Border.all(
-            color: colorScheme.outlineVariant.withOpacity(0.5),
+            color: colorScheme.outlineVariant.withValues(alpha: 0.3),
           ),
         ),
         child: Row(
           children: [
-            CircleAvatar(
+            AppAvatar(
+              photoPath: profile?.photoPath,
               radius: 30,
-              backgroundColor: colorScheme.primaryContainer,
-              child: profile?.photoPath != null
-                  ? ClipOval(
-                      child: Image.asset(
-                        profile!.photoPath!,
-                        fit: BoxFit.cover,
-                        width: 60,
-                        height: 60,
-                        errorBuilder: (_, __, ___) => Icon(
-                          Icons.person,
-                          color: colorScheme.primary,
-                          size: 30,
-                        ),
-                      ),
-                    )
-                  : Icon(
-                      Icons.person,
-                      color: colorScheme.primary,
-                      size: 30,
-                    ),
             ),
             SizedBox(width: sereneTheme.spacing.md),
             Expanded(
@@ -682,7 +344,7 @@ class _ProfileCard extends ConsumerWidget {
                     ),
                   ),
                   Text(
-                    l10n.editProfileTitle,
+                    '${allProfiles.length} perfil(es) · Toca para cambiar o agregar',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colorScheme.primary,
                     ),
@@ -691,12 +353,514 @@ class _ProfileCard extends ConsumerWidget {
               ),
             ),
             Icon(
-              Icons.chevron_right,
+              Icons.unfold_more_rounded,
               color: colorScheme.onSurfaceVariant,
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _CloudCalendarCard extends ConsumerStatefulWidget {
+  const _CloudCalendarCard();
+
+  @override
+  ConsumerState<_CloudCalendarCard> createState() => _CloudCalendarCardState();
+}
+
+class _CloudCalendarCardState extends ConsumerState<_CloudCalendarCard> {
+  bool _isLoading = false;
+  List<Map<String, dynamic>> _connections = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchConnections();
+  }
+
+  Future<void> _fetchConnections() async {
+    final profile = ref.read(currentUserProfileProvider);
+    if (profile == null) return;
+    final calendarService = ref.read(pkceCalendarServiceProvider);
+    final result = await calendarService.getConnections(profileId: profile.id);
+    if (result case Success(:final value)) {
+      if (mounted) {
+        setState(() => _connections = value);
+      }
+    }
+  }
+
+  bool _isConnected(String provider) {
+    return _connections.any(
+      (c) =>
+          c['provider'] == provider &&
+          (c['connected'] == true || c['status'] == 'active'),
+    );
+  }
+
+  Future<void> _connect(String provider) async {
+    if (provider == 'google') {
+      await _connectGoogle();
+      return;
+    }
+    await _connectViaBrowser(provider);
+  }
+
+  /// Google Calendar uses the native google_sign_in flow: the SDK requests
+  /// the calendar scope and returns a serverAuthCode that the backend
+  /// exchanges for tokens (browser redirect flows are rejected by Google on
+  /// Android clients).
+  Future<void> _connectGoogle() async {
+    final profile = ref.read(currentUserProfileProvider);
+    if (profile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No hay un perfil activo seleccionado')),
+      );
+      return;
+    }
+
+    String? message;
+    setState(() => _isLoading = true);
+    try {
+      var account = appGoogleSignIn.currentUser;
+      account ??= await appGoogleSignIn.signInSilently();
+      account ??= await appGoogleSignIn.signIn();
+      if (!mounted) return;
+
+      if (account == null) {
+        // User cancelled the Google sign-in dialog.
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      final granted = await appGoogleSignIn.requestScopes(
+        [EnvConfig.googleCalendarScope],
+      );
+      if (!mounted) return;
+      if (!granted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Se necesita permiso de Google Calendar para sincronizar.',
+            ),
+          ),
+        );
+        return;
+      }
+
+      // Android does not refresh serverAuthCode after requestScopes; force a
+      // silent re-sign-in so the code includes the newly granted scope.
+      await appGoogleSignIn.signOut();
+      final fresh =
+          await appGoogleSignIn.signInSilently() ??
+          await appGoogleSignIn.signIn();
+      if (!mounted) return;
+
+      final serverAuthCode = fresh?.serverAuthCode;
+      if (fresh == null || serverAuthCode == null || serverAuthCode.isEmpty) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'No se obtuvo autorización de Google. Intenta de nuevo.',
+            ),
+          ),
+        );
+        return;
+      }
+
+      final calendarService = ref.read(pkceCalendarServiceProvider);
+      final result = await calendarService.connectWithServerAuthCode(
+        profileId: profile.id,
+        code: serverAuthCode,
+      );
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      if (result case FailureResult(:final failure)) {
+        message = switch (failure) {
+          ServerFailure(:final message) => message ?? 'Error del servidor',
+          _ => 'Fallo al conectar Google Calendar',
+        };
+      } else {
+        await _fetchConnections();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Google Calendar conectado'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      message = 'Error al conectar: $e';
+    }
+
+    if (message != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    }
+  }
+
+  Future<void> _connectViaBrowser(String provider) async {
+    final profile = ref.read(currentUserProfileProvider);
+    if (profile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No hay un perfil activo seleccionado')),
+      );
+      return;
+    }
+    setState(() => _isLoading = true);
+    final calendarService = ref.read(pkceCalendarServiceProvider);
+    final result = await calendarService.initiateAuthorization(
+      profileId: profile.id,
+      provider: provider,
+    );
+    setState(() => _isLoading = false);
+
+    if (result case Success(:final value)) {
+      final uri = Uri.tryParse(value.authorizationUrl);
+      if (uri != null) {
+        try {
+          final launched = await launchUrl(
+            uri,
+            mode: LaunchMode.externalApplication,
+          );
+          if (!launched) {
+            await launchUrl(uri, mode: LaunchMode.platformDefault);
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('No se pudo abrir el navegador: $e')),
+            );
+          }
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('URL de autorización inválida')),
+          );
+        }
+      }
+    } else if (result case FailureResult(:final failure)) {
+      final msg = switch (failure) {
+        ServerFailure(:final message) => message ?? 'Error del servidor',
+        _ => 'Fallo al autorizar',
+      };
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al conectar: $msg')),
+        );
+      }
+    }
+  }
+
+  Future<void> _disconnect(String provider) async {
+    final profile = ref.read(currentUserProfileProvider);
+    if (profile == null) return;
+    setState(() => _isLoading = true);
+    final calendarService = ref.read(pkceCalendarServiceProvider);
+    await calendarService.disconnectCalendar(
+      profileId: profile.id,
+      provider: provider,
+    );
+    await _fetchConnections();
+    setState(() => _isLoading = false);
+  }
+
+  Future<void> _syncNow() async {
+    final profile = ref.read(currentUserProfileProvider);
+    if (profile == null) return;
+    setState(() => _isLoading = true);
+    final calendarService = ref.read(pkceCalendarServiceProvider);
+    final result = await calendarService.syncCalendar(profileId: profile.id);
+    setState(() => _isLoading = false);
+
+    if (!mounted) return;
+
+    if (result case Success(:final value)) {
+      final created = (value['eventsCreated'] as num?)?.toInt() ?? 0;
+      final updated = (value['eventsUpdated'] as num?)?.toInt() ?? 0;
+      final skipped = (value['skipped'] as List<dynamic>? ?? const [])
+          .map((s) => s is Map<String, dynamic> ? s['reason'] as String? : null)
+          .whereType<String>()
+          .toList();
+
+      final String message;
+      if (created == 0 && updated == 0) {
+        message = _describeSkips(skipped);
+      } else {
+        message =
+            'Sincronización exitosa: $created creados, $updated actualizados';
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se pudo sincronizar el calendario en la nube'),
+        ),
+      );
+    }
+  }
+
+  String _describeSkips(List<String> reasons) {
+    if (reasons.any((r) => r == 'UPSERT_FAILED' || r == 'REFRESH_FAILED')) {
+      return 'No se pudo sincronizar con el proveedor de calendario';
+    }
+    if (reasons.contains('REAUTH_REQUIRED')) {
+      return 'Reautoriza la conexión de calendario e intenta de nuevo';
+    }
+    if (reasons.contains('NO_MEDICATIONS')) {
+      return 'Sin medicamentos registrados: no hay eventos que sincronizar';
+    }
+    if (reasons.contains('NO_SCHEDULES')) {
+      return 'Sin horarios activos: no hay eventos que sincronizar';
+    }
+    if (reasons.contains('NO_UPCOMING_DOSE_EVENTS')) {
+      return 'No hay dosis próximas en los siguientes 14 días';
+    }
+    return 'Sincronización completada: no hay eventos por crear';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final serene = theme.extension<SereneTheme>()!;
+    final googleConnected = _isConnected('google');
+    final microsoftConnected = _isConnected('microsoft');
+
+    return Container(
+      padding: EdgeInsets.all(serene.spacing.md),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: serene.radius.lg,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Sincroniza tus dosis automáticamente con tu cuenta de Google Calendar o Microsoft Outlook.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          SizedBox(height: serene.spacing.md),
+          // Google Calendar
+          ListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.event, color: Colors.blue),
+            title: const Text(
+              'Google Calendar',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text(googleConnected ? 'Conectado' : 'No conectado'),
+            trailing: googleConnected
+                ? OutlinedButton(
+                    onPressed: _isLoading ? null : () => _disconnect('google'),
+                    child: const Text('Desconectar'),
+                  )
+                : FilledButton.tonal(
+                    onPressed: _isLoading ? null : () => _connect('google'),
+                    child: const Text('Conectar'),
+                  ),
+          ),
+          const Divider(height: 1),
+          // Microsoft Outlook
+          ListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.calendar_today, color: Colors.indigo),
+            title: const Text(
+              'Microsoft Outlook',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text(microsoftConnected ? 'Conectado' : 'No conectado'),
+            trailing: microsoftConnected
+                ? OutlinedButton(
+                    onPressed: _isLoading
+                        ? null
+                        : () => _disconnect('microsoft'),
+                    child: const Text('Desconectar'),
+                  )
+                : FilledButton.tonal(
+                    onPressed: _isLoading ? null : () => _connect('microsoft'),
+                    child: const Text('Conectar'),
+                  ),
+          ),
+          if (googleConnected || microsoftConnected) ...[
+            SizedBox(height: serene.spacing.md),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _isLoading ? null : _syncNow,
+                icon: const Icon(Icons.sync_rounded, size: 18),
+                label: const Text('Sincronizar eventos ahora'),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _CloudAccountCard extends ConsumerWidget {
+  const _CloudAccountCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authAsync = ref.watch(authProvider);
+    final user = authAsync.asData?.value;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final serene = theme.extension<SereneTheme>()!;
+    final l10n = AppLocalizations.of(context);
+
+    return Container(
+      padding: EdgeInsets.all(serene.spacing.md),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLowest,
+        borderRadius: serene.radius.lg,
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+        ),
+      ),
+      child: user != null
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.cloud_done_rounded,
+                      color: colorScheme.secondary,
+                      size: 24,
+                    ),
+                    SizedBox(width: serene.spacing.sm),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.settingsCloudSyncSection,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            user.email,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: serene.spacing.md),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () async {
+                          final syncEngine = ref.read(syncEngineProvider);
+                          await syncEngine.flushOutbox();
+                          final prefs = ref.read(sharedPreferencesProvider);
+                          final profileId = prefs.getString(
+                            'active_profile_id',
+                          );
+                          if (profileId != null) {
+                            await syncEngine.syncProfile(profileId);
+                          }
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(l10n.settingsCloudSyncSuccess),
+                              ),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.sync_rounded, size: 18),
+                        label: Text(l10n.settingsCloudSyncSyncButton),
+                        style: OutlinedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: serene.radius.lg,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: serene.spacing.sm),
+                    TextButton(
+                      onPressed: () async {
+                        await ref.read(authProvider.notifier).logout();
+                        ref.invalidate(currentUserProfileProvider);
+                        ref.invalidate(allProfilesProvider);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(l10n.settingsCloudSyncLoggedOut),
+                            ),
+                          );
+                          context.go(AppRoutes.login);
+                        }
+                      },
+                      child: Text(
+                        l10n.settingsCloudSyncLogoutButton,
+                        style: TextStyle(color: colorScheme.error),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            )
+          : Row(
+              children: [
+                Icon(
+                  Icons.cloud_off_rounded,
+                  color: colorScheme.onSurfaceVariant,
+                  size: 24,
+                ),
+                SizedBox(width: serene.spacing.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.settingsCloudSyncLocalMode,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        l10n.settingsCloudSyncLocalModeDesc,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(width: serene.spacing.sm),
+                FilledButton.tonal(
+                  onPressed: () => context.push(AppRoutes.login),
+                  style: FilledButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: serene.radius.lg,
+                    ),
+                  ),
+                  child: Text(l10n.settingsCloudSyncConnectButton),
+                ),
+              ],
+            ),
     );
   }
 }

@@ -6,6 +6,8 @@ import 'package:my_pills/features/schedules/data/db/schedules_table.dart';
 class DoseEventsTable extends Table {
   IntColumn get id => integer().autoIncrement()();
 
+  TextColumn get serverId => text().nullable()();
+
   IntColumn get medicationId => integer().references(
     MedicationsTable,
     #id,
@@ -23,6 +25,8 @@ class DoseEventsTable extends Table {
 
   TextColumn get clientId => text().nullable()();
 
+  TextColumn get profileId => text().withDefault(const Constant('default'))();
+
   DateTimeColumn get serverUpdatedAt => dateTime().nullable()();
 
   TextColumn get syncStatus => text().withDefault(const Constant('synced'))();
@@ -39,6 +43,11 @@ class DoseEventsTable extends Table {
       'dose_events_schedule_time_idx',
       'CREATE INDEX dose_events_schedule_time_idx '
           'ON dose_events_table (schedule_id, scheduled_at_utc)',
+    ),
+    Index(
+      'dose_events_profile_time_idx',
+      'CREATE INDEX dose_events_profile_time_idx '
+          'ON dose_events_table (profile_id, scheduled_at_utc)',
     ),
   ];
 }

@@ -9,6 +9,8 @@ import 'package:my_pills/core/theme/serene_theme.dart';
 import 'package:my_pills/core/widgets/sanctuary_app_bar.dart';
 import 'package:my_pills/features/medications/domain/entities/medication.dart';
 import 'package:my_pills/features/medications/presentation/providers/medications_providers.dart';
+import 'package:my_pills/features/medications/presentation/utils/medication_visual_helpers.dart';
+import 'package:my_pills/features/profile/presentation/providers/profile_providers.dart';
 import 'package:my_pills/features/timeline/presentation/providers/timeline_providers.dart';
 import 'package:my_pills/features/tracker/domain/entities/dose_event.dart';
 import 'package:my_pills/features/tracker/presentation/providers/tracker_providers.dart';
@@ -34,7 +36,6 @@ class _TrackerScreenState extends ConsumerState<TrackerScreen> {
   double _lastScrollPixels = 0;
 
   // Range managed as local state: today ± N days.
-  late DateTime _today;
   int _pastDays = 0;
   int _futureDays = 2;
 
@@ -45,8 +46,6 @@ class _TrackerScreenState extends ConsumerState<TrackerScreen> {
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
-    _today = DateTime(now.year, now.month, now.day);
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
   }
@@ -58,11 +57,6 @@ class _TrackerScreenState extends ConsumerState<TrackerScreen> {
       ..dispose();
     super.dispose();
   }
-
-  TimelineRange get _range => (
-    start: _today.subtract(Duration(days: _pastDays)),
-    end: _today.add(Duration(days: _futureDays)),
-  );
 
   void _onScroll() {
     if (!_scrollController.hasClients) return;
@@ -106,10 +100,12 @@ class _TrackerScreenState extends ConsumerState<TrackerScreen> {
     final now = ref.watch(clockProvider);
     final today = DateTime(now.year, now.month, now.day);
 
-    // Keep _today in sync with the clock (handles midnight rollover).
-    if (_today != today) _today = today;
+    final range = (
+      start: today.subtract(Duration(days: _pastDays)),
+      end: today.add(Duration(days: _futureDays)),
+    );
 
-    final eventsAsync = ref.watch(timelineEventsProvider(_range));
+    final eventsAsync = ref.watch(timelineEventsProvider(range));
     final medsAsync = ref.watch(medicationsStreamProvider);
 
     // Update cache when fresh data arrives.
@@ -134,9 +130,10 @@ class _TrackerScreenState extends ConsumerState<TrackerScreen> {
     }
 
     final medications = medsResult.valueOrNull!;
+    final medicationIds = medications.map((m) => m.id).toSet();
     final allDoses =
         eventsResult.valueOrNull!
-            .where((d) => medications.any((m) => m.id == d.medicationId))
+            .where((d) => medicationIds.contains(d.medicationId))
             .toList(growable: false)
           ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
 
@@ -515,15 +512,33 @@ class _DoseRow extends ConsumerWidget {
         timeLabel = '${l10n.trackerMissedAlert} • $time';
     }
 
+    final formIcon = medicationFormIcon(medication.form);
+    final formLabel = medicationFormLabel(l10n, medication.form);
+    final medColor = resolveMedicationColor(medication.colorToken, theme);
+
+    final allProfiles = ref.watch(allProfilesProvider);
+    final currentProfile = ref.watch(currentUserProfileProvider);
+    final matchedProfile =
+        currentProfile ?? (allProfiles.isNotEmpty ? allProfiles.first : null);
+    final profileName = matchedProfile?.name;
+    final profilePhotoPath = matchedProfile?.photoPath;
+
     return Padding(
       padding: EdgeInsets.only(bottom: isLast ? 0 : serene.spacing.md),
       child: TimelineNode(
         status: dose.status,
         isFirst: isFirst,
         isLast: isLast,
+        medicationIcon: formIcon,
+        medicationColor: medColor,
         child: TimelineCard(
           title: medication.name,
-          subtitle: medication.category,
+          subtitle: medication.notes ?? '',
+          profileName: profileName,
+          profilePhotoPath: profilePhotoPath,
+          category: medication.category,
+          formLabel: formLabel,
+          accentColor: medColor,
           timeLabel: timeLabel,
           isFocus: isActionable,
           chipColor: chipColor,
@@ -534,7 +549,9 @@ class _DoseRow extends ConsumerWidget {
               ? () => unawaited(_markTaken(context, ref, dose.id))
               : null,
           onTrailingIconPressed: isActionable
-              ? () => unawaited(_deleteDoseEvent(context, ref, dose.id))
+              ? () => unawaited(
+                  _showCancelAlertOptions(context, ref, dose, medication),
+                )
               : null,
         ),
       ),
@@ -555,7 +572,193 @@ class _DoseRow extends ConsumerWidget {
       ..invalidate(adherenceProvider);
   }
 
-  Future<void> _deleteDoseEvent(
+  Future<void> _showCancelAlertOptions(
+    BuildContext context,
+    WidgetRef ref,
+    DoseEvent dose,
+    Medication medication,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final serene = theme.extension<SereneTheme>()!;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: theme.colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (bottomSheetContext) => SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          serene.spacing.lg,
+          serene.spacing.lg,
+          serene.spacing.lg,
+          serene.spacing.lg + MediaQuery.paddingOf(bottomSheetContext).bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.outlineVariant,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            SizedBox(height: serene.spacing.lg),
+            Text(
+              l10n.cancelAlertTitle,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: serene.spacing.xs),
+            Text(
+              l10n.cancelAlertSubtitle(medication.name),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            SizedBox(height: serene.spacing.xl),
+            InkWell(
+              onTap: () {
+                Navigator.of(bottomSheetContext).pop();
+                unawaited(_cancelSingleDoseEvent(context, ref, dose.id));
+              },
+              borderRadius: serene.radius.lg,
+              child: Container(
+                padding: EdgeInsets.all(serene.spacing.md),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerLow,
+                  borderRadius: serene.radius.lg,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer.withValues(
+                          alpha: 0.3,
+                        ),
+                        borderRadius: serene.radius.md,
+                      ),
+                      child: Icon(
+                        Icons.notifications_off_outlined,
+                        color: theme.colorScheme.primary,
+                        size: 22,
+                      ),
+                    ),
+                    SizedBox(width: serene.spacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.cancelSingleAlertOption,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            l10n.cancelSingleAlertOptionDesc,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SizedBox(height: serene.spacing.md),
+            InkWell(
+              onTap: () {
+                Navigator.of(bottomSheetContext).pop();
+                unawaited(
+                  _cancelRecurringAlerts(context, ref, dose.scheduleId),
+                );
+              },
+              borderRadius: serene.radius.lg,
+              child: Container(
+                padding: EdgeInsets.all(serene.spacing.md),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerLow,
+                  borderRadius: serene.radius.lg,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.tertiaryContainer.withValues(
+                          alpha: 0.3,
+                        ),
+                        borderRadius: serene.radius.md,
+                      ),
+                      child: Icon(
+                        Icons.event_repeat_rounded,
+                        color: theme.colorScheme.tertiary,
+                        size: 22,
+                      ),
+                    ),
+                    SizedBox(width: serene.spacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.cancelRecurringAlertsOption,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            l10n.cancelRecurringAlertsOptionDesc,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SizedBox(height: serene.spacing.lg),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: () => Navigator.of(bottomSheetContext).pop(),
+                child: Text(l10n.cancelButton),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _cancelSingleDoseEvent(
     BuildContext context,
     WidgetRef ref,
     int id,
@@ -568,6 +771,42 @@ class _DoseRow extends ConsumerWidget {
       );
       return;
     }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          AppLocalizations.of(context).singleAlertCancelledMessage,
+        ),
+      ),
+    );
+    ref
+      ..invalidate(streakProvider)
+      ..invalidate(adherenceProvider);
+  }
+
+  Future<void> _cancelRecurringAlerts(
+    BuildContext context,
+    WidgetRef ref,
+    int scheduleId,
+  ) async {
+    final result = await ref
+        .read(cancelRecurringNotificationsUseCaseProvider)
+        .call(
+          scheduleId: scheduleId,
+        );
+    if (!context.mounted) return;
+    if (result case FailureResult()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).errorUnexpected)),
+      );
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          AppLocalizations.of(context).recurringAlertsCancelledMessage,
+        ),
+      ),
+    );
     ref
       ..invalidate(streakProvider)
       ..invalidate(adherenceProvider);

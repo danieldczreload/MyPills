@@ -13,6 +13,9 @@ void main() {
         category: 'Pain',
         colorToken: 'sky',
         notes: 'Take with food',
+        profileId: 'default',
+        syncStatus: 'synced',
+        isTombstone: false,
       );
 
       final entity = toMedicationEntity(row);
@@ -32,6 +35,9 @@ void main() {
         form: 'capsule',
         category: 'Pain',
         colorToken: 'green',
+        profileId: 'default',
+        syncStatus: 'synced',
+        isTombstone: false,
       );
 
       final entity = toMedicationEntity(row);

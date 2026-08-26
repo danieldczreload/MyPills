@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1089951342990",
+    "project_id": "mypills-a5b3e",
+    "storage_bucket": "mypills-a5b3e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1089951342990:android:f62d24da952891ed7304df",
+        "android_client_info": {
+          "package_name": "com.mypills.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCGGyrR-B3ejSjdmq0UenoJQHbs-D72h18"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

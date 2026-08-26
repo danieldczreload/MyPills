@@ -1,9 +1,8 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:my_pills/core/theme/serene_theme.dart';
+import 'package:my_pills/core/widgets/app_avatar.dart';
 import 'package:my_pills/core/widgets/soft_input_field.dart';
 import 'package:my_pills/features/profile/domain/entities/user_profile.dart';
 import 'package:my_pills/l10n/app_localizations.dart';
@@ -48,6 +47,22 @@ class _UserProfileFormState extends State<UserProfileForm> {
     _birthDate = profile?.birthDate;
     _gender = profile?.gender ?? 'other';
     _photoPath = profile?.photoPath;
+  }
+
+  @override
+  void didUpdateWidget(covariant UserProfileForm oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialProfile != null && oldWidget.initialProfile == null) {
+      if (_nameController.text.isEmpty &&
+          widget.initialProfile!.name.isNotEmpty) {
+        _nameController.text = widget.initialProfile!.name;
+      }
+      if (_photoPath == null && widget.initialProfile!.photoPath != null) {
+        setState(() {
+          _photoPath = widget.initialProfile!.photoPath;
+        });
+      }
+    }
   }
 
   @override
@@ -133,19 +148,11 @@ class _UserProfileFormState extends State<UserProfileForm> {
               onTap: _pickPhoto,
               child: Stack(
                 children: [
-                  CircleAvatar(
+                  AppAvatar(
+                    photoPath: _photoPath,
                     radius: 48,
-                    backgroundColor: theme.colorScheme.surfaceContainerHigh,
-                    backgroundImage: _photoPath != null
-                        ? FileImage(File(_photoPath!))
-                        : null,
-                    child: _photoPath == null
-                        ? Icon(
-                            Icons.add_a_photo,
-                            size: 32,
-                            color: theme.colorScheme.onSurfaceVariant,
-                          )
-                        : null,
+                    fallbackIcon: Icons.add_a_photo,
+                    fallbackIconSize: 32,
                   ),
                   if (hasExistingPhoto || _photoPath != null)
                     Positioned(

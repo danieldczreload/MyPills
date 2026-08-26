@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:my_pills/app/router.dart';
 import 'package:my_pills/core/theme/serene_theme.dart';
+import 'package:my_pills/features/auth/presentation/providers/auth_providers.dart';
 import 'package:my_pills/features/notifications/presentation/onboarding_permission_flow.dart';
 import 'package:my_pills/features/profile/domain/entities/user_profile.dart';
 import 'package:my_pills/features/profile/presentation/providers/profile_providers.dart';
@@ -18,6 +19,17 @@ class OnboardingScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final serene = theme.extension<SereneTheme>()!;
+    final authUser = ref.watch(authProvider).asData?.value;
+
+    final initialProfile = authUser != null
+        ? UserProfile(
+            id: 'default',
+            name: authUser.name ?? '',
+            birthDate: DateTime(2000, 1, 1),
+            gender: 'other',
+            photoPath: authUser.photoUrl,
+          )
+        : null;
 
     return Scaffold(
       body: SafeArea(
@@ -55,6 +67,7 @@ class OnboardingScreen extends ConsumerWidget {
             ),
             Expanded(
               child: UserProfileForm(
+                initialProfile: initialProfile,
                 submitLabel: l10n.onboardingStartButton,
                 onSubmit: (profile) => _submit(context, ref, profile),
               ),

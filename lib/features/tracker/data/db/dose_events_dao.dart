@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:my_pills/core/db/app_database.dart';
 import 'package:my_pills/features/tracker/data/db/dose_events_table.dart';
+import 'package:uuid/uuid.dart';
 
 part 'dose_events_dao.g.dart';
 
@@ -11,17 +12,27 @@ class DoseEventsDao extends DatabaseAccessor<AppDatabase>
 
   Future<List<DoseEventsTableData>> getInUtcRange(
     DateTime startInclusiveUtc,
-    DateTime endExclusiveUtc,
-  ) {
-    final query = _rangeQuery(startInclusiveUtc, endExclusiveUtc);
+    DateTime endExclusiveUtc, {
+    String? profileId,
+  }) {
+    final query = _rangeQuery(
+      startInclusiveUtc,
+      endExclusiveUtc,
+      profileId: profileId,
+    );
     return query.get();
   }
 
   Stream<List<DoseEventsTableData>> watchInUtcRange(
     DateTime startInclusiveUtc,
-    DateTime endExclusiveUtc,
-  ) {
-    final query = _rangeQuery(startInclusiveUtc, endExclusiveUtc);
+    DateTime endExclusiveUtc, {
+    String? profileId,
+  }) {
+    final query = _rangeQuery(
+      startInclusiveUtc,
+      endExclusiveUtc,
+      profileId: profileId,
+    );
     return query.watch();
   }
 
@@ -38,10 +49,15 @@ class DoseEventsDao extends DatabaseAccessor<AppDatabase>
     required int scheduleId,
     required DateTime startInclusiveUtc,
     required DateTime endExclusiveUtc,
+    String? profileId,
   }) {
     final query = select(doseEventsTable)
       ..where(
         (t) =>
+            t.isTombstone.equals(false) &
+            (profileId != null
+                ? t.profileId.equals(profileId)
+                : const Constant(true)) &
             t.scheduleId.equals(scheduleId) &
             t.status.equals('pending') &
             t.scheduledAtUtc.isBiggerOrEqualValue(startInclusiveUtc) &
@@ -54,10 +70,15 @@ class DoseEventsDao extends DatabaseAccessor<AppDatabase>
     required int scheduleId,
     required DateTime startInclusiveUtc,
     required DateTime endExclusiveUtc,
+    String? profileId,
   }) {
     final query = select(doseEventsTable)
       ..where(
         (t) =>
+            t.isTombstone.equals(false) &
+            (profileId != null
+                ? t.profileId.equals(profileId)
+                : const Constant(true)) &
             t.scheduleId.equals(scheduleId) &
             t.scheduledAtUtc.isBiggerOrEqualValue(startInclusiveUtc) &
             t.scheduledAtUtc.isSmallerThanValue(endExclusiveUtc),
@@ -71,17 +92,20 @@ class DoseEventsDao extends DatabaseAccessor<AppDatabase>
     required DateTime startInclusiveUtc,
     required DateTime endExclusiveUtc,
     required List<DateTime> expectedScheduledAtUtc,
+    String? profileId,
   }) {
     return transaction(() async {
       final existing = await getPendingForScheduleInUtcRange(
         scheduleId: scheduleId,
         startInclusiveUtc: startInclusiveUtc,
         endExclusiveUtc: endExclusiveUtc,
+        profileId: profileId,
       );
       final allExisting = await getForScheduleInUtcRange(
         scheduleId: scheduleId,
         startInclusiveUtc: startInclusiveUtc,
         endExclusiveUtc: endExclusiveUtc,
+        profileId: profileId,
       );
 
       // Drift reads DateTime from SQLite as local (isUtc=false) even when the
@@ -90,55 +114,37 @@ class DoseEventsDao extends DatabaseAccessor<AppDatabase>
       // local DateTime with the same millisecondsSinceEpoch are NOT equal.
       // Normalise everything to epoch-millis integers to avoid false mismatches
       // that would cause already-existing records to be re-inserted as duplicates.
-      final existingByMs = <int, DoseEventsTableData>{
-        for (final row in existing)
-          row.scheduledAtUtc.millisecondsSinceEpoch: row,
-      };
       final allExistingMs = allExisting
           .map((row) => row.scheduledAtUtc.millisecondsSinceEpoch)
           .toSet();
-      final expectedMs = {
-        for (final dt in expectedScheduledAtUtc) dt.millisecondsSinceEpoch,
-      };
 
-      final toDeleteIds = existing
-          .where(
-            (row) =>
-                !expectedMs.contains(row.scheduledAtUtc.millisecondsSinceEpoch),
-          )
-          .map((row) => row.id)
-          .toList(growable: false);
-      if (toDeleteIds.isNotEmpty) {
-        await (delete(
-          doseEventsTable,
-        )..where((t) => t.id.isIn(toDeleteIds))).go();
+      for (final scheduledAt in expectedScheduledAtUtc) {
+        final key = scheduledAt.millisecondsSinceEpoch;
+        if (!allExistingMs.contains(key)) {
+          await insertDoseEvent(
+            DoseEventsTableCompanion.insert(
+              medicationId: medicationId,
+              scheduleId: scheduleId,
+              scheduledAtUtc: scheduledAt,
+              status: 'pending',
+              profileId: Value(profileId ?? 'default'),
+              clientId: Value(const Uuid().v4()),
+            ),
+          );
+        }
       }
 
-      final missing = expectedScheduledAtUtc
-          .where(
-            (scheduledAtUtc) =>
-                !existingByMs.containsKey(
-                  scheduledAtUtc.millisecondsSinceEpoch,
-                ) &&
-                !allExistingMs.contains(scheduledAtUtc.millisecondsSinceEpoch),
-          )
-          .toList(growable: false);
-      if (missing.isNotEmpty) {
-        await batch((b) {
-          b.insertAll(
+      final expectedMs = expectedScheduledAtUtc
+          .map((dt) => dt.millisecondsSinceEpoch)
+          .toSet();
+
+      for (final row in existing) {
+        final key = row.scheduledAtUtc.millisecondsSinceEpoch;
+        if (!expectedMs.contains(key)) {
+          await (delete(
             doseEventsTable,
-            missing
-                .map(
-                  (scheduledAtUtc) => DoseEventsTableCompanion.insert(
-                    medicationId: medicationId,
-                    scheduleId: scheduleId,
-                    scheduledAtUtc: scheduledAtUtc,
-                    status: 'pending',
-                  ),
-                )
-                .toList(growable: false),
-          );
-        });
+          )..where((t) => t.id.equals(row.id))).go();
+        }
       }
     });
   }
@@ -170,11 +176,16 @@ class DoseEventsDao extends DatabaseAccessor<AppDatabase>
 
   SimpleSelectStatement<$DoseEventsTableTable, DoseEventsTableData> _rangeQuery(
     DateTime startInclusiveUtc,
-    DateTime endExclusiveUtc,
-  ) {
+    DateTime endExclusiveUtc, {
+    String? profileId,
+  }) {
     final query = select(doseEventsTable)
       ..where(
         (t) =>
+            t.isTombstone.equals(false) &
+            (profileId != null
+                ? t.profileId.equals(profileId)
+                : const Constant(true)) &
             t.scheduledAtUtc.isBiggerOrEqualValue(startInclusiveUtc) &
             t.scheduledAtUtc.isSmallerThanValue(endExclusiveUtc),
       )
@@ -188,10 +199,15 @@ class DoseEventsDao extends DatabaseAccessor<AppDatabase>
   Future<List<DoseEventsTableData>> getAllInUtcRange({
     required DateTime startInclusiveUtc,
     required DateTime endExclusiveUtc,
+    String? profileId,
   }) {
     return (select(doseEventsTable)
           ..where(
             (t) =>
+                t.isTombstone.equals(false) &
+                (profileId != null
+                    ? t.profileId.equals(profileId)
+                    : const Constant(true)) &
                 t.scheduledAtUtc.isBiggerOrEqualValue(startInclusiveUtc) &
                 t.scheduledAtUtc.isSmallerThanValue(endExclusiveUtc),
           )
@@ -204,10 +220,17 @@ class DoseEventsDao extends DatabaseAccessor<AppDatabase>
   Future<int> countTakenInUtcRange({
     required DateTime startInclusiveUtc,
     required DateTime endExclusiveUtc,
+    String? profileId,
   }) async {
     final query = selectOnly(doseEventsTable)
       ..where(
-        doseEventsTable.scheduledAtUtc.isBiggerOrEqualValue(startInclusiveUtc) &
+        doseEventsTable.isTombstone.equals(false) &
+            (profileId != null
+                ? doseEventsTable.profileId.equals(profileId)
+                : const Constant(true)) &
+            doseEventsTable.scheduledAtUtc.isBiggerOrEqualValue(
+              startInclusiveUtc,
+            ) &
             doseEventsTable.scheduledAtUtc.isSmallerThanValue(endExclusiveUtc) &
             doseEventsTable.status.equals('taken'),
       )
@@ -219,10 +242,17 @@ class DoseEventsDao extends DatabaseAccessor<AppDatabase>
   Future<int> countTotalInUtcRange({
     required DateTime startInclusiveUtc,
     required DateTime endExclusiveUtc,
+    String? profileId,
   }) async {
     final query = selectOnly(doseEventsTable)
       ..where(
-        doseEventsTable.scheduledAtUtc.isBiggerOrEqualValue(startInclusiveUtc) &
+        doseEventsTable.isTombstone.equals(false) &
+            (profileId != null
+                ? doseEventsTable.profileId.equals(profileId)
+                : const Constant(true)) &
+            doseEventsTable.scheduledAtUtc.isBiggerOrEqualValue(
+              startInclusiveUtc,
+            ) &
             doseEventsTable.scheduledAtUtc.isSmallerThanValue(endExclusiveUtc),
       )
       ..addColumns([doseEventsTable.id.count()]);

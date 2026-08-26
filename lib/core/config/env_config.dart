@@ -18,6 +18,24 @@ abstract final class EnvConfig {
         '583477896483-8061qrld7nh240st439768dplhsggq73.apps.googleusercontent.com',
   );
 
+  /// Google Web Application Client ID used as serverClientId so the
+  /// serverAuthCode can be exchanged by the backend for Calendar API access.
+  /// Public identifier (safe to hardcode); the secret lives only on the server.
+  static const String googleWebClientId = String.fromEnvironment(
+    'GOOGLE_WEB_CLIENT_ID',
+    defaultValue:
+        '583477896483-l1antrvp31f8pged7qqvlocu2rmqg7et.apps.googleusercontent.com',
+  );
+
+  /// Effective serverClientId passed to google_sign_in. Must match the client
+  /// the backend uses to exchange the server auth code.
+  static String get effectiveGoogleServerClientId =>
+      googleWebClientId.isNotEmpty ? googleWebClientId : googleServerClientId;
+
+  /// Scope required to create events on the user's primary Google Calendar.
+  static const String googleCalendarScope =
+      'https://www.googleapis.com/auth/calendar';
+
   /// Microsoft Azure Entra ID OAuth 2.0 Client ID.
   static const String microsoftClientId = String.fromEnvironment(
     'MICROSOFT_CLIENT_ID',

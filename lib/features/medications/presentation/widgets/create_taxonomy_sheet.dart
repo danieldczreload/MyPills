@@ -7,9 +7,14 @@ import 'package:my_pills/features/medications/presentation/providers/taxonomy_pr
 import 'package:my_pills/l10n/app_localizations.dart';
 
 class CreateTaxonomySheet extends ConsumerStatefulWidget {
-  const CreateTaxonomySheet({required this.type, super.key});
+  const CreateTaxonomySheet({
+    required this.type,
+    this.initialGroup,
+    super.key,
+  });
 
   final TaxonomyType type;
+  final TaxonomyGroup? initialGroup;
 
   @override
   ConsumerState<CreateTaxonomySheet> createState() =>
@@ -17,10 +22,25 @@ class CreateTaxonomySheet extends ConsumerStatefulWidget {
 }
 
 class _CreateTaxonomySheetState extends ConsumerState<CreateTaxonomySheet> {
-  final _nameController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  String _selectedIcon = 'heart';
-  Color _selectedColor = Colors.red;
+  late final TextEditingController _nameController;
+  late final TextEditingController _descriptionController;
+  late String _selectedIcon;
+  late Color _selectedColor;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(
+      text: widget.initialGroup?.name ?? '',
+    );
+    _descriptionController = TextEditingController(
+      text: widget.initialGroup?.description ?? '',
+    );
+    _selectedIcon = widget.initialGroup?.iconName ?? 'heart';
+    _selectedColor = widget.initialGroup != null
+        ? Color(widget.initialGroup!.colorValue)
+        : Colors.red;
+  }
 
   final List<String> _icons = [
     'heart',
@@ -118,9 +138,13 @@ class _CreateTaxonomySheetState extends ConsumerState<CreateTaxonomySheet> {
                     ),
                     children: [
                       Text(
-                        widget.type == TaxonomyType.category
-                            ? l10n.createCategoryButton
-                            : l10n.createDiseaseButton,
+                        widget.initialGroup != null
+                            ? (widget.type == TaxonomyType.category
+                                  ? 'Editar Categoría'
+                                  : 'Editar Condición')
+                            : (widget.type == TaxonomyType.category
+                                  ? l10n.createCategoryButton
+                                  : l10n.createDiseaseButton),
                         style: theme.textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: theme.colorScheme.primary,
@@ -230,25 +254,89 @@ class _CreateTaxonomySheetState extends ConsumerState<CreateTaxonomySheet> {
                         width: double.infinity,
                         child: ElevatedButton(
                           onPressed: () async {
-                            if (_nameController.text.isEmpty) return;
+                            if (_nameController.text.trim().isEmpty) return;
 
-                            final taxonomyGroup = TaxonomyGroup(
-                              id: 0, // Auto-incremented in DB
-                              type: widget.type,
-                              name: _nameController.text,
-                              description: _descriptionController.text,
-                              iconName: _selectedIcon,
-                              colorValue: _selectedColor.toARGB32(),
-                            );
-
-                            await ref
-                                .read(addTaxonomyGroupProvider)
-                                .call(taxonomyGroup);
+                            if (widget.initialGroup != null) {
+                              final updated = widget.initialGroup!.copyWith(
+                                name: _nameController.text.trim(),
+                                description: _descriptionController.text.trim(),
+                                iconName: _selectedIcon,
+                                colorValue: _selectedColor.toARGB32(),
+                              );
+                              await ref
+                                  .read(taxonomyRepositoryProvider)
+                                  .updateTaxonomyGroup(updated);
+                            } else {
+                              final taxonomyGroup = TaxonomyGroup(
+                                id: 0,
+                                type: widget.type,
+                                name: _nameController.text.trim(),
+                                description: _descriptionController.text.trim(),
+                                iconName: _selectedIcon,
+                                colorValue: _selectedColor.toARGB32(),
+                              );
+                              await ref
+                                  .read(addTaxonomyGroupProvider)
+                                  .call(taxonomyGroup);
+                            }
                             if (context.mounted) Navigator.pop(context);
                           },
                           child: Text(l10n.saveButton),
                         ),
                       ),
+                      if (widget.initialGroup != null) ...[
+                        SizedBox(height: serene.spacing.md),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: theme.colorScheme.error,
+                              side: BorderSide(
+                                color: theme.colorScheme.error.withValues(
+                                  alpha: 0.5,
+                                ),
+                              ),
+                            ),
+                            icon: const Icon(Icons.delete_outline, size: 18),
+                            label: const Text('Eliminar Categoría'),
+                            onPressed: () async {
+                              final confirmed = await showDialog<bool>(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  title: const Text('¿Eliminar categoría?'),
+                                  content: Text(
+                                    '¿Estás seguro de que deseas eliminar "${widget.initialGroup!.name}"?',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(ctx).pop(false),
+                                      child: Text(l10n.cancelButton),
+                                    ),
+                                    FilledButton(
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor:
+                                            theme.colorScheme.error,
+                                      ),
+                                      onPressed: () =>
+                                          Navigator.of(ctx).pop(true),
+                                      child: const Text('Eliminar'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (confirmed == true && context.mounted) {
+                                await ref
+                                    .read(taxonomyRepositoryProvider)
+                                    .deleteTaxonomyGroup(
+                                      widget.initialGroup!.id,
+                                    );
+                                if (context.mounted) Navigator.pop(context);
+                              }
+                            },
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 40),
                     ],
                   ),

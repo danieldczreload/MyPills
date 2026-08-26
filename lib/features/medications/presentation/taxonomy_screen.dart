@@ -12,6 +12,7 @@ import 'package:my_pills/features/medications/presentation/providers/medications
 import 'package:my_pills/features/medications/presentation/providers/taxonomy_providers.dart';
 import 'package:my_pills/features/medications/presentation/widgets/category_card.dart';
 import 'package:my_pills/features/medications/presentation/widgets/create_category_button.dart';
+import 'package:my_pills/features/medications/presentation/widgets/create_taxonomy_sheet.dart';
 import 'package:my_pills/features/medications/presentation/widgets/health_icon_helper.dart';
 import 'package:my_pills/features/medications/presentation/widgets/taxonomy_header.dart';
 import 'package:my_pills/features/medications/presentation/widgets/taxonomy_segmented_control.dart';
@@ -261,6 +262,24 @@ class _GroupDetailSheet extends ConsumerWidget {
                   ],
                 ),
               ),
+              IconButton.filledTonal(
+                icon: const Icon(Icons.edit_outlined, size: 20),
+                tooltip: 'Editar',
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  showModalBottomSheet<void>(
+                    context: context,
+                    isScrollControlled: true,
+                    useRootNavigator: true,
+                    useSafeArea: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => CreateTaxonomySheet(
+                      type: type,
+                      initialGroup: group,
+                    ),
+                  );
+                },
+              ),
             ],
           ),
           SizedBox(height: serene.spacing.xl),
@@ -304,12 +323,36 @@ class _GroupDetailSheet extends ConsumerWidget {
             ),
           ],
           SizedBox(height: serene.spacing.xl),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.tonal(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(l10n.cancelButton),
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  label: const Text('Editar'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    showModalBottomSheet<void>(
+                      context: context,
+                      isScrollControlled: true,
+                      useRootNavigator: true,
+                      useSafeArea: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => CreateTaxonomySheet(
+                        type: type,
+                        initialGroup: group,
+                      ),
+                    );
+                  },
+                ),
+              ),
+              SizedBox(width: serene.spacing.md),
+              Expanded(
+                child: FilledButton.tonal(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(l10n.cancelButton),
+                ),
+              ),
+            ],
           ),
         ],
       ),

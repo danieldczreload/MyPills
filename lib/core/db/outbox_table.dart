@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 /// Table tracking pending HTTP operations to sync to backend when online.
+@DataClassName('OutboxData')
 class OutboxTable extends Table {
   IntColumn get id => integer().autoIncrement()();
 

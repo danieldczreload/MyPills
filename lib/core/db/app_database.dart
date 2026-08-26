@@ -25,6 +25,7 @@ part 'app_database.g.dart';
     SchedulesTable,
     DoseEventsTable,
     TaxonomyGroupsTable,
+    // Offline Outbox queue table
     OutboxTable,
   ],
   daos: [MedicationDao, ScheduleDao, DoseEventsDao, TaxonomyGroupsDao],
@@ -33,7 +34,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -44,6 +45,27 @@ class AppDatabase extends _$AppDatabase {
     onUpgrade: (m, from, to) async {
       if (from < 4) {
         await m.createAll();
+      }
+      if (from < 5) {
+        await m.addColumn(medicationsTable, medicationsTable.serverId);
+        await m.addColumn(schedulesTable, schedulesTable.serverId);
+        await m.addColumn(doseEventsTable, doseEventsTable.serverId);
+      }
+      if (from < 6) {
+        await m.addColumn(taxonomyGroupsTable, taxonomyGroupsTable.clientId);
+        await m.addColumn(taxonomyGroupsTable, taxonomyGroupsTable.serverId);
+        await m.addColumn(
+          taxonomyGroupsTable,
+          taxonomyGroupsTable.serverUpdatedAt,
+        );
+        await m.addColumn(taxonomyGroupsTable, taxonomyGroupsTable.syncStatus);
+        await m.addColumn(taxonomyGroupsTable, taxonomyGroupsTable.isTombstone);
+      }
+      if (from < 7) {
+        await m.addColumn(medicationsTable, medicationsTable.profileId);
+        await m.addColumn(schedulesTable, schedulesTable.profileId);
+        await m.addColumn(doseEventsTable, doseEventsTable.profileId);
+        await m.addColumn(taxonomyGroupsTable, taxonomyGroupsTable.profileId);
       }
     },
   );

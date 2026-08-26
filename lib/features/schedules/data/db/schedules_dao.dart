@@ -10,8 +10,15 @@ class ScheduleDao extends DatabaseAccessor<AppDatabase>
     with _$ScheduleDaoMixin {
   ScheduleDao(super.attachedDatabase);
 
-  Future<List<SchedulesTableData>> getAllSchedules() {
+  Future<List<SchedulesTableData>> getAllSchedules({String? profileId}) {
     final query = select(schedulesTable)
+      ..where(
+        (t) =>
+            t.isTombstone.equals(false) &
+            (profileId != null
+                ? t.profileId.equals(profileId)
+                : const Constant(true)),
+      )
       ..orderBy([
         (t) => OrderingTerm.asc(t.startDateUtc),
         (t) => OrderingTerm.asc(t.id),
@@ -19,8 +26,15 @@ class ScheduleDao extends DatabaseAccessor<AppDatabase>
     return query.get();
   }
 
-  Stream<List<SchedulesTableData>> watchAllSchedules() {
+  Stream<List<SchedulesTableData>> watchAllSchedules({String? profileId}) {
     final query = select(schedulesTable)
+      ..where(
+        (t) =>
+            t.isTombstone.equals(false) &
+            (profileId != null
+                ? t.profileId.equals(profileId)
+                : const Constant(true)),
+      )
       ..orderBy([
         (t) => OrderingTerm.asc(t.startDateUtc),
         (t) => OrderingTerm.asc(t.id),

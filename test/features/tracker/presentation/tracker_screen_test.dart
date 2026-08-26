@@ -8,8 +8,10 @@ import 'package:my_pills/core/result/result.dart';
 import 'package:my_pills/core/theme/app_theme.dart';
 import 'package:my_pills/features/medications/domain/entities/medication.dart';
 import 'package:my_pills/features/medications/presentation/providers/medications_providers.dart';
+import 'package:my_pills/features/schedules/domain/use_cases/cancel_recurring_notifications.dart';
 import 'package:my_pills/features/timeline/presentation/providers/timeline_providers.dart';
 import 'package:my_pills/features/tracker/domain/entities/dose_event.dart';
+import 'package:my_pills/features/tracker/domain/use_cases/delete_dose_event.dart';
 import 'package:my_pills/features/tracker/domain/use_cases/mark_dose_missed.dart';
 import 'package:my_pills/features/tracker/domain/use_cases/mark_dose_taken.dart';
 import 'package:my_pills/features/tracker/presentation/providers/tracker_providers.dart';
@@ -21,12 +23,20 @@ import '../../../helpers/mocks.dart';
 
 void main() {
   late MockDoseEventRepository mockDoseEventRepository;
+  late MockScheduleRepository mockScheduleRepository;
   late SharedPreferences testPrefs;
 
   setUpAll(registerFallbackValues);
 
   setUp(() async {
     mockDoseEventRepository = MockDoseEventRepository();
+    mockScheduleRepository = MockScheduleRepository();
+    when(
+      () => mockScheduleRepository.getAll(),
+    ).thenAnswer((_) async => const Result.success([]));
+    when(
+      () => mockDoseEventRepository.getForDateRange(any(), any()),
+    ).thenAnswer((_) async => const Result.success([]));
     SharedPreferences.setMockInitialValues({});
     testPrefs = await SharedPreferences.getInstance();
   });
@@ -59,6 +69,14 @@ void main() {
         markDoseMissedUseCaseProvider.overrideWith(
           (ref) => MarkDoseMissed(mockDoseEventRepository),
         ),
+        deleteDoseEventUseCaseProvider.overrideWith(
+          (ref) => DeleteDoseEvent(mockDoseEventRepository),
+        ),
+        cancelRecurringNotificationsUseCaseProvider.overrideWith(
+          (ref) => CancelRecurringNotifications(mockScheduleRepository),
+        ),
+        doseEventRepositoryProvider.overrideWithValue(mockDoseEventRepository),
+        scheduleRepositoryProvider.overrideWithValue(mockScheduleRepository),
       ],
       child: MaterialApp(
         theme: AppTheme.light(),
@@ -244,5 +262,108 @@ void main() {
 
       verify(() => mockDoseEventRepository.markTaken(1, any())).called(1);
     });
+
+    testWidgets('tapping delete icon opens sheet and cancels single alert', (
+      tester,
+    ) async {
+      final doses = [
+        DoseEvent(
+          id: 1,
+          medicationId: 10,
+          scheduleId: 100,
+          scheduledAt: DateTime(2024, 6, 15, 8),
+          status: DoseStatus.pending,
+        ),
+      ];
+      final medications = [
+        const Medication(
+          id: 10,
+          name: 'Paracetamol',
+          form: MedicationForm.pill,
+          category: 'Pain',
+          colorToken: 'sky',
+        ),
+      ];
+
+      when(() => mockDoseEventRepository.delete(1)).thenAnswer(
+        (_) async => const Result.success(null),
+      );
+
+      await tester.pumpWidget(
+        buildTestableTracker(doses: doses, medications: medications),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.delete_outline));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Cancelar recordatorio'), findsOneWidget);
+      expect(find.text('Solo esta toma de hoy'), findsOneWidget);
+      expect(find.text('Todas las alertas de este horario'), findsOneWidget);
+
+      await tester.tap(find.text('Solo esta toma de hoy'));
+      await tester.pumpAndSettle();
+
+      verify(() => mockDoseEventRepository.delete(1)).called(1);
+      expect(find.text('Alerta de hoy cancelada'), findsOneWidget);
+    });
+
+    testWidgets(
+      'tapping delete icon opens sheet and cancels recurring alerts',
+      (
+        tester,
+      ) async {
+        final doses = [
+          DoseEvent(
+            id: 1,
+            medicationId: 10,
+            scheduleId: 100,
+            scheduledAt: DateTime(2024, 6, 15, 8),
+            status: DoseStatus.pending,
+          ),
+        ];
+        final medications = [
+          const Medication(
+            id: 10,
+            name: 'Paracetamol',
+            form: MedicationForm.pill,
+            category: 'Pain',
+            colorToken: 'sky',
+          ),
+        ];
+
+        when(
+          () => mockScheduleRepository.cancelRecurring(
+            scheduleId: any(named: 'scheduleId'),
+            medicationId: any(named: 'medicationId'),
+            cancelPush: any(named: 'cancelPush'),
+            cancelCalendar: any(named: 'cancelCalendar'),
+            deleteSchedule: any(named: 'deleteSchedule'),
+          ),
+        ).thenAnswer((_) async => const Result.success(null));
+
+        await tester.pumpWidget(
+          buildTestableTracker(doses: doses, medications: medications),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.delete_outline));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Todas las alertas de este horario'));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockScheduleRepository.cancelRecurring(
+            scheduleId: 100,
+            medicationId: any(named: 'medicationId'),
+            cancelPush: any(named: 'cancelPush'),
+            cancelCalendar: any(named: 'cancelCalendar'),
+            deleteSchedule: any(named: 'deleteSchedule'),
+          ),
+        ).called(1);
+        expect(find.text('Alertas recurrentes canceladas'), findsOneWidget);
+      },
+    );
   });
 }

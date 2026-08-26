@@ -7,6 +7,18 @@ abstract class AuthRepository {
     required String password,
   });
 
+  Future<Result<AuthUser>> loginWithGoogle(
+    String idToken, {
+    String? displayName,
+    String? photoUrl,
+  });
+
+  Future<Result<AuthUser>> loginWithMicrosoft(
+    String idToken, {
+    String? displayName,
+    String? photoUrl,
+  });
+
   Future<Result<AuthUser>> register({
     required String email,
     required String password,

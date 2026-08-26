@@ -1,9 +1,13 @@
+import 'dart:async';
+
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:my_pills/app/providers.dart';
 import 'package:my_pills/app/router.dart';
+import 'package:my_pills/core/db/app_database.dart';
 import 'package:my_pills/core/result/result.dart';
 import 'package:my_pills/core/theme/serene_theme.dart';
 import 'package:my_pills/core/widgets/gradient_primary_button.dart';
@@ -13,7 +17,16 @@ import 'package:my_pills/core/widgets/soft_dropdown_field.dart';
 import 'package:my_pills/core/widgets/soft_input_field.dart';
 import 'package:my_pills/features/medications/domain/entities/medication.dart';
 import 'package:my_pills/features/medications/presentation/providers/medications_providers.dart';
+import 'package:my_pills/features/notifications/presentation/providers/notification_providers.dart';
+import 'package:my_pills/features/profile/presentation/providers/profile_providers.dart';
+import 'package:my_pills/features/profile/presentation/widgets/profile_selector_field.dart';
+import 'package:my_pills/features/schedules/data/repositories/drift_schedule_repository.dart';
+import 'package:my_pills/features/schedules/data/repositories/synced_schedules_repository.dart';
 import 'package:my_pills/features/schedules/domain/entities/schedule.dart';
+import 'package:my_pills/features/schedules/domain/services/dose_reconciler.dart';
+import 'package:my_pills/features/schedules/domain/use_cases/create_schedule.dart';
+import 'package:my_pills/features/schedules/presentation/widgets/notification_type_selector.dart';
+import 'package:my_pills/features/tracker/data/repositories/drift_dose_event_repository.dart';
 import 'package:my_pills/l10n/app_localizations.dart';
 
 class DailySchedulerScreen extends ConsumerStatefulWidget {
@@ -31,8 +44,11 @@ class _DailySchedulerScreenState extends ConsumerState<DailySchedulerScreen> {
   final DateTime _startDate = DateTime.now();
   DateTime? _endDate;
   late int? _medicationId = widget.initialMedicationId;
+  String? _selectedProfileId;
   bool _isContinuous = true;
   bool _isSetTimesMode = true;
+  bool _notifyPush = true;
+  bool _notifyCalendar = false;
 
   late final TextEditingController _startDateController;
   late final TextEditingController _endDateController;
@@ -59,6 +75,12 @@ class _DailySchedulerScreenState extends ConsumerState<DailySchedulerScreen> {
     final theme = Theme.of(context);
     final serene = theme.extension<SereneTheme>()!;
     final medsAsync = ref.watch(medicationsStreamProvider);
+    final allProfiles = ref.watch(allProfilesProvider);
+    final currentProfile = ref.watch(currentUserProfileProvider);
+
+    _selectedProfileId ??=
+        currentProfile?.id ??
+        (allProfiles.isNotEmpty ? allProfiles.first.id : 'default');
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -260,6 +282,36 @@ class _DailySchedulerScreenState extends ConsumerState<DailySchedulerScreen> {
                     suffixIcon: const Icon(Icons.calendar_month),
                   ),
                 ],
+                if (allProfiles.isNotEmpty) ...[
+                  SizedBox(height: serene.spacing.xl),
+                  Text(
+                    l10n.profileSelectorHeading,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  SizedBox(height: serene.spacing.xs),
+                  Text(
+                    l10n.profileSelectorSubheading,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  SizedBox(height: serene.spacing.md),
+                  ProfileSelectorField(
+                    selectedProfileId: _selectedProfileId,
+                    profiles: allProfiles,
+                    onSelected: (id) => setState(() => _selectedProfileId = id),
+                  ),
+                ],
+                SizedBox(height: serene.spacing.xl),
+                NotificationTypeSelector(
+                  notifyPush: _notifyPush,
+                  notifyCalendar: _notifyCalendar,
+                  onPushChanged: (v) => setState(() => _notifyPush = v),
+                  onCalendarChanged: (v) => setState(() => _notifyCalendar = v),
+                ),
                 SizedBox(height: serene.spacing.xxxxl),
                 GradientPrimaryButton(
                   label: l10n.confirmScheduleButton,
@@ -570,9 +622,53 @@ class _DailySchedulerScreenState extends ConsumerState<DailySchedulerScreen> {
       endDate: _isContinuous || _endDate == null
           ? null
           : DateTime(_endDate!.year, _endDate!.month, _endDate!.day),
+      notifyPush: _notifyPush,
+      notifyCalendar: _notifyCalendar,
     );
 
-    final result = await ref.read(createScheduleUseCaseProvider).call(schedule);
+    final targetProfileId =
+        _selectedProfileId ??
+        ref.read(currentUserProfileProvider)?.id ??
+        'default';
+
+    final db = ref.read(databaseProvider);
+    final syncEngine = ref.read(syncEngineProvider);
+
+    // Ensure the medication is associated with the target profile
+    await (db.update(
+      db.medicationsTable,
+    )..where((t) => t.id.equals(_medicationId!))).write(
+      MedicationsTableCompanion(
+        profileId: Value(targetProfileId),
+      ),
+    );
+
+    final scheduleRepo = DriftScheduleRepository(
+      db,
+      profileId: targetProfileId,
+    );
+    final syncedScheduleRepo = SyncedScheduleRepository(
+      localRepo: scheduleRepo,
+      db: db,
+      syncEngine: syncEngine,
+      profileId: targetProfileId,
+    );
+
+    final doseRepo = DriftDoseEventRepository(db, profileId: targetProfileId);
+    final reconciler = DoseReconciler(
+      scheduleRepository: syncedScheduleRepo,
+      doseEventRepository: doseRepo,
+      expander: ref.read(scheduleExpanderProvider),
+      clock: () => ref.read(clockProvider),
+      onReconciled: () => ref.read(syncNotificationsUseCaseProvider).call(),
+    );
+
+    final createScheduleUseCase = CreateSchedule(
+      syncedScheduleRepo,
+      reconciler: reconciler,
+    );
+
+    final result = await createScheduleUseCase.call(schedule);
     if (!mounted) return;
     if (result case FailureResult()) {
       ScaffoldMessenger.of(
@@ -580,6 +676,54 @@ class _DailySchedulerScreenState extends ConsumerState<DailySchedulerScreen> {
       ).showSnackBar(SnackBar(content: Text(l10n.errorUnexpected)));
       return;
     }
+
+    final connections =
+        ref.read(calendarConnectionsProvider(targetProfileId)).value ?? [];
+    final hasConnectedCalendar = connections.any(
+      (c) => c['connected'] == true || c['status'] == 'active',
+    );
+
+    if (_notifyPush) {
+      final medAsync = ref.read(medicationsStreamProvider);
+      final meds = medAsync.value?.valueOrNull ?? [];
+      final selectedMed = meds.where((m) => m.id == _medicationId).firstOrNull;
+      final medName = selectedMed?.name ?? 'Medicamento';
+      unawaited(
+        ref
+            .read(notificationSchedulerProvider)
+            .showTest(
+              title: 'Recordatorio programado',
+              body: 'Alarmas y notificaciones activas para $medName.',
+            ),
+      );
+    }
+
+    if (_notifyCalendar && hasConnectedCalendar) {
+      unawaited(
+        ref
+            .read(pkceCalendarServiceProvider)
+            .syncCalendar(profileId: targetProfileId),
+      );
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          _notifyCalendar && !hasConnectedCalendar
+              ? 'Horario guardado. Recuerda vincular tu calendario en Configuración.'
+              : (_notifyCalendar
+                    ? 'Horario guardado y sincronizado con tu calendario.'
+                    : 'Horario guardado correctamente.'),
+        ),
+        action: (_notifyCalendar && !hasConnectedCalendar)
+            ? SnackBarAction(
+                label: 'Conectar',
+                onPressed: () => context.push(AppRoutes.settings),
+              )
+            : null,
+      ),
+    );
+
     context.go(AppRoutes.today);
   }
 }

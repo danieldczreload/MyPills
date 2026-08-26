@@ -9,6 +9,7 @@ import 'package:my_pills/app/router.dart';
 import 'package:my_pills/core/result/result.dart';
 import 'package:my_pills/core/theme/serene_theme.dart';
 import 'package:my_pills/features/medications/domain/entities/medication.dart';
+import 'package:my_pills/features/medications/presentation/utils/medication_visual_helpers.dart';
 import 'package:my_pills/features/schedules/domain/entities/schedule.dart';
 import 'package:my_pills/l10n/app_localizations.dart';
 
@@ -22,7 +23,7 @@ class MedicationDetailScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final serene = theme.extension<SereneTheme>()!;
-    final accentColor = _resolveColor(medication.colorToken, theme);
+    final accentColor = resolveMedicationColor(medication.colorToken, theme);
 
     final schedulesAsync = ref.watch(
       schedulesForMedicationProvider(medication.id),
@@ -65,7 +66,7 @@ class MedicationDetailScreen extends ConsumerWidget {
                       borderRadius: serene.radius.lg,
                     ),
                     child: Icon(
-                      _formIcon(medication.form),
+                      medicationFormIcon(medication.form),
                       color: accentColor,
                       size: 32,
                     ),
@@ -190,6 +191,14 @@ class MedicationDetailScreen extends ConsumerWidget {
                       SizedBox(height: serene.spacing.md),
                   itemBuilder: (context, index) => _ScheduleCard(
                     schedule: schedules[index],
+                    onCancelAlerts: () => unawaited(
+                      _cancelScheduleAlerts(
+                        context,
+                        ref,
+                        schedules[index],
+                        l10n,
+                      ),
+                    ),
                     onDelete: () => unawaited(
                       _deleteSchedule(context, ref, schedules[index], l10n),
                     ),
@@ -238,6 +247,50 @@ class MedicationDetailScreen extends ConsumerWidget {
     );
   }
 
+  Future<void> _cancelScheduleAlerts(
+    BuildContext context,
+    WidgetRef ref,
+    Schedule schedule,
+    AppLocalizations l10n,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.cancelRecurringTitle),
+        content: Text(l10n.cancelRecurringConfirmation),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.cancelButton),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(ctx).colorScheme.primary,
+            ),
+            child: Text(l10n.cancelRecurringButton),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final result = await ref
+        .read(cancelRecurringNotificationsUseCaseProvider)
+        .call(
+          scheduleId: schedule.id,
+        );
+    if (!context.mounted) return;
+    if (result case FailureResult()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.errorUnexpected)),
+      );
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.recurringAlertsCancelledMessage)),
+    );
+  }
+
   Future<void> _deleteSchedule(
     BuildContext context,
     WidgetRef ref,
@@ -279,35 +332,24 @@ class MedicationDetailScreen extends ConsumerWidget {
       SnackBar(content: Text(l10n.scheduleDeletedMessage)),
     );
   }
-
-  Color _resolveColor(String token, ThemeData theme) => switch (token) {
-    'secondary' => theme.colorScheme.secondary,
-    'tertiary' => theme.colorScheme.tertiary,
-    _ => theme.colorScheme.primary,
-  };
-
-  IconData _formIcon(MedicationForm form) => switch (form) {
-    MedicationForm.pill => Icons.medication_rounded,
-    MedicationForm.capsule => Icons.medication_liquid_rounded,
-    MedicationForm.liquid => Icons.local_drink_rounded,
-    MedicationForm.injection => Icons.vaccines_rounded,
-    MedicationForm.drops => Icons.water_drop_rounded,
-    MedicationForm.inhaler => Icons.air_rounded,
-    MedicationForm.patch => Icons.fiber_manual_record_rounded,
-    MedicationForm.other => Icons.help_outline_rounded,
-  };
 }
 
 class _ScheduleCard extends StatelessWidget {
-  const _ScheduleCard({required this.schedule, required this.onDelete});
+  const _ScheduleCard({
+    required this.schedule,
+    required this.onCancelAlerts,
+    required this.onDelete,
+  });
 
   final Schedule schedule;
+  final VoidCallback onCancelAlerts;
   final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final serene = theme.extension<SereneTheme>()!;
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       padding: EdgeInsets.all(serene.spacing.lg),
@@ -360,11 +402,53 @@ class _ScheduleCard extends StatelessWidget {
               ],
             ),
           ),
-          IconButton(
-            onPressed: onDelete,
-            icon: const Icon(Icons.delete_outline_rounded),
-            color: theme.colorScheme.error.withValues(alpha: 0.7),
-            tooltip: 'Eliminar horario',
+          PopupMenuButton<String>(
+            icon: Icon(
+              Icons.more_vert_rounded,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            shape: RoundedRectangleBorder(borderRadius: serene.radius.md),
+            color: theme.colorScheme.surfaceContainerHighest,
+            onSelected: (value) {
+              if (value == 'cancel_alerts') {
+                onCancelAlerts();
+              } else if (value == 'delete') {
+                onDelete();
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'cancel_alerts',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.notifications_off_outlined,
+                      size: 20,
+                      color: theme.colorScheme.primary,
+                    ),
+                    SizedBox(width: serene.spacing.sm),
+                    Text(l10n.cancelRecurringButton),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.delete_outline_rounded,
+                      size: 20,
+                      color: theme.colorScheme.error,
+                    ),
+                    SizedBox(width: serene.spacing.sm),
+                    Text(
+                      l10n.deleteButton,
+                      style: TextStyle(color: theme.colorScheme.error),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),

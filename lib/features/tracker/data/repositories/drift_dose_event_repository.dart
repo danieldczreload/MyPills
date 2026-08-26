@@ -11,9 +11,12 @@ import 'package:my_pills/features/tracker/domain/repositories/dose_event_reposit
 
 class DriftDoseEventRepository
     implements DoseEventRepository, TimelineRepository {
-  DriftDoseEventRepository(AppDatabase db) : _dao = db.doseEventsDao;
+  DriftDoseEventRepository(AppDatabase db, {String profileId = 'default'})
+    : _dao = db.doseEventsDao,
+      _profileId = profileId;
 
   final DoseEventsDao _dao;
+  final String _profileId;
 
   @override
   Future<Result<List<DoseEvent>>> getForDate(DateTime date) {
@@ -113,6 +116,7 @@ class DriftDoseEventRepository
         expectedScheduledAtUtc: expectedScheduledAt
             .map((value) => value.toUtc())
             .toList(growable: false),
+        profileId: _profileId,
       );
       return const Result<void>.success(null);
     } on Object catch (error, stackTrace) {
@@ -134,6 +138,7 @@ class DriftDoseEventRepository
       final todayDoses = await _dao.getAllInUtcRange(
         startInclusiveUtc: startOfToday,
         endExclusiveUtc: todayEnd,
+        profileId: _profileId,
       );
       final todayComplete =
           todayDoses.isNotEmpty && todayDoses.every((d) => d.status == 'taken');
@@ -147,6 +152,7 @@ class DriftDoseEventRepository
         final dayDoses = await _dao.getAllInUtcRange(
           startInclusiveUtc: currentDayStart,
           endExclusiveUtc: dayEnd,
+          profileId: _profileId,
         );
 
         if (dayDoses.isEmpty) break; // no doses scheduled → streak ends
@@ -186,10 +192,12 @@ class DriftDoseEventRepository
       final taken = await _dao.countTakenInUtcRange(
         startInclusiveUtc: sevenDaysAgo,
         endExclusiveUtc: todayEnd,
+        profileId: _profileId,
       );
       final total = await _dao.countTotalInUtcRange(
         startInclusiveUtc: sevenDaysAgo,
         endExclusiveUtc: todayEnd,
+        profileId: _profileId,
       );
 
       if (total == 0) {
@@ -210,7 +218,11 @@ class DriftDoseEventRepository
     DateTime endExclusiveUtc,
   ) async {
     try {
-      final rows = await _dao.getInUtcRange(startInclusiveUtc, endExclusiveUtc);
+      final rows = await _dao.getInUtcRange(
+        startInclusiveUtc,
+        endExclusiveUtc,
+        profileId: _profileId,
+      );
       return Result.success(
         rows.map(toDoseEventEntity).toList(growable: false),
       );
@@ -227,7 +239,11 @@ class DriftDoseEventRepository
   ) {
     return Stream<Result<List<DoseEvent>>>.multi((controller) {
       final subscription = _dao
-          .watchInUtcRange(startInclusiveUtc, endExclusiveUtc)
+          .watchInUtcRange(
+            startInclusiveUtc,
+            endExclusiveUtc,
+            profileId: _profileId,
+          )
           .listen(
             (rows) {
               try {

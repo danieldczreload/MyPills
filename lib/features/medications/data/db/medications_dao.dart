@@ -9,14 +9,28 @@ class MedicationDao extends DatabaseAccessor<AppDatabase>
     with _$MedicationDaoMixin {
   MedicationDao(super.attachedDatabase);
 
-  Future<List<MedicationsTableData>> getAllMedications() {
+  Future<List<MedicationsTableData>> getAllMedications({String? profileId}) {
     final query = select(medicationsTable)
+      ..where(
+        (t) =>
+            t.isTombstone.equals(false) &
+            (profileId != null
+                ? t.profileId.equals(profileId)
+                : const Constant(true)),
+      )
       ..orderBy([(t) => OrderingTerm.asc(t.name)]);
     return query.get();
   }
 
-  Stream<List<MedicationsTableData>> watchAllMedications() {
+  Stream<List<MedicationsTableData>> watchAllMedications({String? profileId}) {
     final query = select(medicationsTable)
+      ..where(
+        (t) =>
+            t.isTombstone.equals(false) &
+            (profileId != null
+                ? t.profileId.equals(profileId)
+                : const Constant(true)),
+      )
       ..orderBy([(t) => OrderingTerm.asc(t.name)]);
     return query.watch();
   }

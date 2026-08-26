@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
+import 'package:my_pills/core/config/env_config.dart';
 import 'package:my_pills/core/storage/token_storage.dart';
 
 /// Central API HTTP client powered by Dio with JWT auth interceptor and
@@ -17,7 +20,7 @@ class ApiClient {
            dio ??
            Dio(
              BaseOptions(
-               baseUrl: baseUrl ?? 'http://10.0.2.2:8000/api/v1',
+               baseUrl: baseUrl ?? EnvConfig.apiBaseUrl,
                connectTimeout: const Duration(seconds: 15),
                receiveTimeout: const Duration(seconds: 15),
                headers: {
@@ -26,6 +29,17 @@ class ApiClient {
                },
              ),
            ) {
+    if (!kIsWeb && _dio.httpClientAdapter is IOHttpClientAdapter) {
+      (_dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
+        final client = HttpClient();
+        client.badCertificateCallback = (cert, host, port) {
+          return host == 'localhost' ||
+              host == '127.0.0.1' ||
+              host == '10.0.2.2';
+        };
+        return client;
+      };
+    }
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: _onRequest,
@@ -74,10 +88,9 @@ class ApiClient {
         } on DioException catch (e) {
           return handler.next(e);
         }
-      } else {
-        await _tokenStorage.clearTokens();
-        _onUnauthenticated?.call();
       }
+      await _tokenStorage.clearTokens();
+      _onUnauthenticated?.call();
     }
     handler.next(err);
   }
@@ -104,7 +117,8 @@ class ApiClient {
 
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data!;
-        final newAccessToken = data['accessToken'] as String?;
+        final newAccessToken =
+            (data['token'] ?? data['accessToken']) as String?;
         final newRefreshToken = data['refreshToken'] as String?;
 
         if (newAccessToken != null && newRefreshToken != null) {

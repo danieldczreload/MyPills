@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:my_pills/app/providers.dart';
+import 'package:my_pills/core/result/result.dart';
 import 'package:my_pills/core/widgets/glass_bottom_nav.dart';
+import 'package:my_pills/features/auth/presentation/providers/auth_providers.dart';
+import 'package:my_pills/features/auth/presentation/screens/login_screen.dart';
 import 'package:my_pills/features/greetings/data/greeting_gate.dart';
 import 'package:my_pills/features/greetings/presentation/screens/greeting_screen.dart';
 import 'package:my_pills/features/medications/domain/entities/medication.dart';
@@ -39,8 +42,21 @@ final router = GoRouter(
   navigatorKey: rootNavigatorKey,
   initialLocation: AppRoutes.splash,
   redirect: (context, state) {
+    // Custom-scheme OAuth callbacks arrive as com.mypills.app://auth?code=…&state=…
+    // with "auth" in the URI *host* and an empty path. go_router normalizes an
+    // empty path to '/', which would silently drop the OAuth parameters —
+    // remap the callback explicitly to the /auth route.
+    if (state.uri.scheme == 'com.mypills.app' && state.uri.host == 'auth') {
+      return Uri(
+        path: AppRoutes.authCallback,
+        queryParameters: state.uri.queryParameters,
+      ).toString();
+    }
+
     if (state.matchedLocation == AppRoutes.splash) return null;
     if (state.matchedLocation == AppRoutes.welcome) return null;
+    if (state.matchedLocation == AppRoutes.login) return null;
+    if (state.matchedLocation == AppRoutes.authCallback) return null;
 
     // Only intercept the post-splash pivot — all other in-app routes
     // navigate freely and must not be redirected back to today.
@@ -50,7 +66,7 @@ final router = GoRouter(
     final profileRepo = container.read(userProfileRepositoryProvider);
 
     if (!profileRepo.isOnboardingComplete()) {
-      return AppRoutes.onboarding;
+      return AppRoutes.login;
     }
 
     final prefs = container.read(sharedPreferencesProvider);
@@ -78,6 +94,15 @@ final router = GoRouter(
         child: const GreetingScreen(),
       ),
     ),
+    // ── Login (1-Tap Social Auth) ─────────────────────────────────────────────
+    GoRoute(
+      path: AppRoutes.login,
+      name: AppRoutes.login,
+      pageBuilder: (context, state) => _buildFadePage(
+        key: state.pageKey,
+        child: const LoginScreen(),
+      ),
+    ),
     // ── Onboarding ───────────────────────────────────────────────────────────
     GoRoute(
       path: AppRoutes.onboarding,
@@ -95,6 +120,16 @@ final router = GoRouter(
         fullscreenDialog: true,
         child: EditProfileScreen(),
       ),
+    ),
+    // ── OAuth Deep Link Callback (Calendar PKCE) ─────────────────────────────
+    GoRoute(
+      path: AppRoutes.authCallback,
+      name: AppRoutes.authCallback,
+      builder: (context, state) {
+        final code = state.uri.queryParameters['code'];
+        final oauthState = state.uri.queryParameters['state'];
+        return _OAuthCallbackScreen(code: code, oauthState: oauthState);
+      },
     ),
     // ── Primary tab shell ────────────────────────────────────────────────────
     StatefulShellRoute.indexedStack(
@@ -241,8 +276,74 @@ abstract final class AppRoutes {
   static const String schedulerDaily = '/schedule/daily';
   static const String schedulerSpecificDays = '/schedule/specific-days';
   static const String onboarding = '/onboarding';
+  static const String login = '/login';
   static const String editProfile = '/profile/edit';
   static const String settings = '/settings';
+  static const String authCallback = '/auth';
+}
+
+class _OAuthCallbackScreen extends ConsumerStatefulWidget {
+  const _OAuthCallbackScreen({this.code, this.oauthState});
+
+  final String? code;
+  final String? oauthState;
+
+  @override
+  ConsumerState<_OAuthCallbackScreen> createState() =>
+      _OAuthCallbackScreenState();
+}
+
+class _OAuthCallbackScreenState extends ConsumerState<_OAuthCallbackScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _handleCallback());
+  }
+
+  Future<void> _handleCallback() async {
+    final code = widget.code;
+    final oauthState = widget.oauthState;
+    if (code != null && oauthState != null) {
+      if (oauthState.startsWith('ms_auth_')) {
+        final result = await ref
+            .read(authProvider.notifier)
+            .completeMicrosoftLogin(code: code, oauthState: oauthState);
+        if (mounted) {
+          if (result case Success()) {
+            final profileRepo = ref.read(userProfileRepositoryProvider);
+            if (profileRepo.isOnboardingComplete()) {
+              context.go(AppRoutes.today);
+            } else {
+              context.go(AppRoutes.onboarding);
+            }
+          } else {
+            context.go(AppRoutes.login);
+          }
+        }
+        return;
+      }
+
+      final profile = ref.read(currentUserProfileProvider);
+      if (profile != null) {
+        final service = ref.read(pkceCalendarServiceProvider);
+        await service.completeCallbackAuthorization(
+          profileId: profile.id,
+          code: code,
+          state: oauthState,
+        );
+      }
+    }
+    if (mounted) {
+      context.go(AppRoutes.settings);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: CircularProgressIndicator()),
+    );
+  }
 }
 
 class _ScaffoldWithNavBar extends StatelessWidget {

@@ -377,5 +377,76 @@
     }
   },
   "inAppReminderTitle": "Recordatorio",
-  "inAppReminderDismiss": "Desliza para ocultar"
+  "inAppReminderDismiss": "Desliza para ocultar",
+
+  "loginTitle": "Bienvenido a MyPills",
+  "loginSubtitle": "Sincroniza y respalda tus tratamientos médicos de forma segura en la nube.",
+  "loginContinueGoogle": "Continuar con Google",
+  "loginContinueMicrosoft": "Continuar con Microsoft",
+  "loginContinueGuest": "Continuar en modo local (sin cuenta)",
+  "loginSyncingAccount": "Sincronizando tu cuenta...",
+  "loginErrorGoogle": "Error al iniciar sesión con Google: {error}",
+  "@loginErrorGoogle": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "loginErrorMicrosoft": "Error al iniciar sesión con Microsoft: {error}",
+  "@loginErrorMicrosoft": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "settingsCloudSyncSection": "Sincronización en la Nube",
+  "settingsCloudSyncLocalMode": "Modo local (Sin cuenta)",
+  "settingsCloudSyncLocalModeDesc": "Inicia sesión para sincronizar tus medicamentos.",
+  "settingsCloudSyncConnectButton": "Conectar",
+  "settingsCloudSyncSyncButton": "Sincronizar",
+  "settingsCloudSyncLogoutButton": "Cerrar sesión",
+  "settingsCloudSyncSuccess": "Sincronización completada",
+  "settingsCloudSyncLoggedOut": "Sesión cerrada",
+  "greetingGenericWelcome": "Bienvenido a tu espacio de salud. Mantén el control de tus medicamentos y dosis diarias.",
+
+  "cancelAlertTitle": "Cancelar recordatorio",
+  "cancelAlertSubtitle": "¿Qué deseas cancelar para {medication}?",
+  "@cancelAlertSubtitle": {
+    "description": "Subtitle asking whether to cancel single or recurring alert.",
+    "placeholders": {
+      "medication": { "type": "String" }
+    }
+  },
+  "cancelSingleAlertOption": "Solo esta toma de hoy",
+  "cancelSingleAlertOptionDesc": "Cancela la alerta y evento de calendario de esta dosis.",
+  "cancelRecurringAlertsOption": "Todas las alertas de este horario",
+  "cancelRecurringAlertsOptionDesc": "Cancela todas las alertas futuras y eventos en calendarios sincronizados.",
+  "singleAlertCancelledMessage": "Alerta de hoy cancelada",
+  "recurringAlertsCancelledMessage": "Alertas recurrentes canceladas",
+  "cancelRecurringTitle": "Cancelar alertas recurrentes",
+  "cancelRecurringConfirmation": "¿Deseas cancelar todas las alertas programadas y eventos en calendarios para este horario?",
+  "cancelRecurringButton": "Cancelar alertas",
+
+  "profileSelectorHeading": "Perfil",
+  "profileSelectorSubheading": "Selecciona a qué perfil corresponde este recordatorio.",
+  "profileBadgeLabel": "Para {profileName}",
+  "@profileBadgeLabel": {
+    "description": "Tag or badge label indicating which profile the medication belongs to.",
+    "placeholders": {
+      "profileName": { "type": "String" }
+    }
+  },
+  "inAppReminderTitleWithProfile": "Recordatorio para {profileName}",
+  "@inAppReminderTitleWithProfile": {
+    "description": "Title of in-app reminder banner with profile name.",
+    "placeholders": {
+      "profileName": { "type": "String" }
+    }
+  },
+  "notificationBodyWithProfile": "Es hora de tomar {medication} ({profileName})",
+  "@notificationBodyWithProfile": {
+    "description": "Notification body mentioning medication and profile name.",
+    "placeholders": {
+      "medication": { "type": "String" },
+      "profileName": { "type": "String" }
+    }
+  }
 }

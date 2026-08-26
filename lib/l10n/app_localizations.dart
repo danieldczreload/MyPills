@@ -1059,6 +1059,204 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Desliza para ocultar'**
   String get inAppReminderDismiss;
+
+  /// No description provided for @loginTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Bienvenido a MyPills'**
+  String get loginTitle;
+
+  /// No description provided for @loginSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Sincroniza y respalda tus tratamientos médicos de forma segura en la nube.'**
+  String get loginSubtitle;
+
+  /// No description provided for @loginContinueGoogle.
+  ///
+  /// In es, this message translates to:
+  /// **'Continuar con Google'**
+  String get loginContinueGoogle;
+
+  /// No description provided for @loginContinueMicrosoft.
+  ///
+  /// In es, this message translates to:
+  /// **'Continuar con Microsoft'**
+  String get loginContinueMicrosoft;
+
+  /// No description provided for @loginContinueGuest.
+  ///
+  /// In es, this message translates to:
+  /// **'Continuar en modo local (sin cuenta)'**
+  String get loginContinueGuest;
+
+  /// No description provided for @loginSyncingAccount.
+  ///
+  /// In es, this message translates to:
+  /// **'Sincronizando tu cuenta...'**
+  String get loginSyncingAccount;
+
+  /// No description provided for @loginErrorGoogle.
+  ///
+  /// In es, this message translates to:
+  /// **'Error al iniciar sesión con Google: {error}'**
+  String loginErrorGoogle(String error);
+
+  /// No description provided for @loginErrorMicrosoft.
+  ///
+  /// In es, this message translates to:
+  /// **'Error al iniciar sesión con Microsoft: {error}'**
+  String loginErrorMicrosoft(String error);
+
+  /// No description provided for @settingsCloudSyncSection.
+  ///
+  /// In es, this message translates to:
+  /// **'Sincronización en la Nube'**
+  String get settingsCloudSyncSection;
+
+  /// No description provided for @settingsCloudSyncLocalMode.
+  ///
+  /// In es, this message translates to:
+  /// **'Modo local (Sin cuenta)'**
+  String get settingsCloudSyncLocalMode;
+
+  /// No description provided for @settingsCloudSyncLocalModeDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Inicia sesión para sincronizar tus medicamentos.'**
+  String get settingsCloudSyncLocalModeDesc;
+
+  /// No description provided for @settingsCloudSyncConnectButton.
+  ///
+  /// In es, this message translates to:
+  /// **'Conectar'**
+  String get settingsCloudSyncConnectButton;
+
+  /// No description provided for @settingsCloudSyncSyncButton.
+  ///
+  /// In es, this message translates to:
+  /// **'Sincronizar'**
+  String get settingsCloudSyncSyncButton;
+
+  /// No description provided for @settingsCloudSyncLogoutButton.
+  ///
+  /// In es, this message translates to:
+  /// **'Cerrar sesión'**
+  String get settingsCloudSyncLogoutButton;
+
+  /// No description provided for @settingsCloudSyncSuccess.
+  ///
+  /// In es, this message translates to:
+  /// **'Sincronización completada'**
+  String get settingsCloudSyncSuccess;
+
+  /// No description provided for @settingsCloudSyncLoggedOut.
+  ///
+  /// In es, this message translates to:
+  /// **'Sesión cerrada'**
+  String get settingsCloudSyncLoggedOut;
+
+  /// No description provided for @greetingGenericWelcome.
+  ///
+  /// In es, this message translates to:
+  /// **'Bienvenido a tu espacio de salud. Mantén el control de tus medicamentos y dosis diarias.'**
+  String get greetingGenericWelcome;
+
+  /// No description provided for @cancelAlertTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Cancelar recordatorio'**
+  String get cancelAlertTitle;
+
+  /// Subtitle asking whether to cancel single or recurring alert.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué deseas cancelar para {medication}?'**
+  String cancelAlertSubtitle(String medication);
+
+  /// No description provided for @cancelSingleAlertOption.
+  ///
+  /// In es, this message translates to:
+  /// **'Solo esta toma de hoy'**
+  String get cancelSingleAlertOption;
+
+  /// No description provided for @cancelSingleAlertOptionDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Cancela la alerta y evento de calendario de esta dosis.'**
+  String get cancelSingleAlertOptionDesc;
+
+  /// No description provided for @cancelRecurringAlertsOption.
+  ///
+  /// In es, this message translates to:
+  /// **'Todas las alertas de este horario'**
+  String get cancelRecurringAlertsOption;
+
+  /// No description provided for @cancelRecurringAlertsOptionDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Cancela todas las alertas futuras y eventos en calendarios sincronizados.'**
+  String get cancelRecurringAlertsOptionDesc;
+
+  /// No description provided for @singleAlertCancelledMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'Alerta de hoy cancelada'**
+  String get singleAlertCancelledMessage;
+
+  /// No description provided for @recurringAlertsCancelledMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'Alertas recurrentes canceladas'**
+  String get recurringAlertsCancelledMessage;
+
+  /// No description provided for @cancelRecurringTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Cancelar alertas recurrentes'**
+  String get cancelRecurringTitle;
+
+  /// No description provided for @cancelRecurringConfirmation.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Deseas cancelar todas las alertas programadas y eventos en calendarios para este horario?'**
+  String get cancelRecurringConfirmation;
+
+  /// No description provided for @cancelRecurringButton.
+  ///
+  /// In es, this message translates to:
+  /// **'Cancelar alertas'**
+  String get cancelRecurringButton;
+
+  /// No description provided for @profileSelectorHeading.
+  ///
+  /// In es, this message translates to:
+  /// **'Perfil'**
+  String get profileSelectorHeading;
+
+  /// No description provided for @profileSelectorSubheading.
+  ///
+  /// In es, this message translates to:
+  /// **'Selecciona a qué perfil corresponde este recordatorio.'**
+  String get profileSelectorSubheading;
+
+  /// Tag or badge label indicating which profile the medication belongs to.
+  ///
+  /// In es, this message translates to:
+  /// **'Para {profileName}'**
+  String profileBadgeLabel(String profileName);
+
+  /// Title of in-app reminder banner with profile name.
+  ///
+  /// In es, this message translates to:
+  /// **'Recordatorio para {profileName}'**
+  String inAppReminderTitleWithProfile(String profileName);
+
+  /// Notification body mentioning medication and profile name.
+  ///
+  /// In es, this message translates to:
+  /// **'Es hora de tomar {medication} ({profileName})'**
+  String notificationBodyWithProfile(String medication, String profileName);
 }
 
 class _AppLocalizationsDelegate

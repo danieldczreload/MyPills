@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:my_pills/core/theme/serene_theme.dart';
 import 'package:my_pills/features/medications/domain/entities/medication.dart';
+import 'package:my_pills/features/medications/presentation/utils/medication_visual_helpers.dart';
 import 'package:my_pills/l10n/app_localizations.dart';
 
 /// Card representing a single medication in the list screen.
@@ -26,9 +27,9 @@ class MedicationCard extends StatelessWidget {
     final serene = theme.extension<SereneTheme>()!;
     final l10n = AppLocalizations.of(context);
 
-    final accentColor = _resolveColor(medication.colorToken, theme);
-    final formIcon = _formIcon(medication.form);
-    final formLabel = _formLabel(l10n, medication.form);
+    final accentColor = resolveMedicationColor(medication.colorToken, theme);
+    final formIcon = medicationFormIcon(medication.form);
+    final formLabel = medicationFormLabel(l10n, medication.form);
 
     return GestureDetector(
       onTap: onTap,
@@ -128,39 +129,5 @@ class MedicationCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Color _resolveColor(String token, ThemeData theme) {
-    return switch (token) {
-      'secondary' => theme.colorScheme.secondary,
-      'tertiary' => theme.colorScheme.tertiary,
-      _ => theme.colorScheme.primary,
-    };
-  }
-
-  IconData _formIcon(MedicationForm form) {
-    return switch (form) {
-      MedicationForm.pill => Icons.medication_rounded,
-      MedicationForm.capsule => Icons.medication_liquid_rounded,
-      MedicationForm.liquid => Icons.local_drink_rounded,
-      MedicationForm.injection => Icons.vaccines_rounded,
-      MedicationForm.drops => Icons.water_drop_rounded,
-      MedicationForm.inhaler => Icons.air_rounded,
-      MedicationForm.patch => Icons.fiber_manual_record_rounded,
-      MedicationForm.other => Icons.help_outline_rounded,
-    };
-  }
-
-  String _formLabel(AppLocalizations l10n, MedicationForm form) {
-    return switch (form) {
-      MedicationForm.pill => l10n.medicationFormPill,
-      MedicationForm.capsule => l10n.medicationFormCapsule,
-      MedicationForm.liquid => l10n.medicationFormLiquid,
-      MedicationForm.injection => l10n.medicationFormInjection,
-      MedicationForm.drops => l10n.medicationFormDrops,
-      MedicationForm.inhaler => l10n.medicationFormInhaler,
-      MedicationForm.patch => l10n.medicationFormPatch,
-      MedicationForm.other => l10n.medicationFormOther,
-    };
   }
 }

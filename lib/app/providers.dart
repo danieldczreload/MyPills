@@ -2,26 +2,39 @@ import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_pills/core/db/app_database.dart';
+import 'package:my_pills/core/network/api_client.dart';
+import 'package:my_pills/core/network/media_upload_service.dart';
 import 'package:my_pills/core/result/result.dart';
+import 'package:my_pills/core/storage/token_storage.dart';
+import 'package:my_pills/core/sync/sync_engine.dart';
+import 'package:my_pills/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:my_pills/features/auth/domain/repositories/auth_repository.dart';
+import 'package:my_pills/features/calendar_integration/data/services/pkce_calendar_service.dart';
 import 'package:my_pills/features/medications/data/repositories/drift_medication_repository.dart';
+import 'package:my_pills/features/medications/data/repositories/synced_medications_repository.dart';
 import 'package:my_pills/features/medications/domain/repositories/medication_repository.dart';
 import 'package:my_pills/features/medications/domain/use_cases/add_medication.dart';
 import 'package:my_pills/features/medications/domain/use_cases/delete_medication.dart';
 import 'package:my_pills/features/medications/domain/use_cases/update_medication.dart';
 import 'package:my_pills/features/medications/domain/use_cases/watch_medications.dart';
+import 'package:my_pills/features/notifications/data/services/fcm_device_service.dart';
 import 'package:my_pills/features/notifications/domain/use_cases/sync_notifications.dart';
 import 'package:my_pills/features/notifications/presentation/providers/notification_providers.dart';
+import 'package:my_pills/features/profile/presentation/providers/profile_providers.dart';
 import 'package:my_pills/features/schedules/data/repositories/drift_schedule_repository.dart';
+import 'package:my_pills/features/schedules/data/repositories/synced_schedules_repository.dart';
+import 'package:my_pills/features/schedules/domain/entities/schedule.dart';
 import 'package:my_pills/features/schedules/domain/repositories/schedule_repository.dart';
 import 'package:my_pills/features/schedules/domain/services/dose_reconciler.dart';
 import 'package:my_pills/features/schedules/domain/services/schedule_expander.dart';
-import 'package:my_pills/features/schedules/domain/entities/schedule.dart';
+import 'package:my_pills/features/schedules/domain/use_cases/cancel_recurring_notifications.dart';
 import 'package:my_pills/features/schedules/domain/use_cases/create_schedule.dart';
 import 'package:my_pills/features/schedules/domain/use_cases/delete_schedule.dart';
 import 'package:my_pills/features/timeline/domain/repositories/timeline_repository.dart';
 import 'package:my_pills/features/timeline/domain/use_cases/get_timeline_range.dart';
 import 'package:my_pills/features/timeline/domain/use_cases/watch_timeline_range.dart';
 import 'package:my_pills/features/tracker/data/repositories/drift_dose_event_repository.dart';
+import 'package:my_pills/features/tracker/data/repositories/synced_dose_events_repository.dart';
 import 'package:my_pills/features/tracker/domain/repositories/dose_event_repository.dart';
 import 'package:my_pills/features/tracker/domain/use_cases/delete_dose_event.dart';
 import 'package:my_pills/features/tracker/domain/use_cases/mark_dose_missed.dart';
@@ -32,30 +45,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 part 'providers.g.dart';
 
-/// Provides the [SharedPreferences] singleton.
-///
-/// Must be overridden in [ProviderScope] after calling
-/// [SharedPreferences.getInstance] in `main()`. Throws if used without
-/// the override to make misconfiguration explicit at runtime.
 @Riverpod(keepAlive: true)
 SharedPreferences sharedPreferences(Ref ref) => throw UnimplementedError(
   'sharedPreferencesProvider must be overridden in main()',
 );
 
-/// Provides the singleton [AppDatabase].
-///
-/// .NET analogue: `AddDbContext<T>()` in `Program.cs` — registered as a
-/// scoped/singleton service and disposed when the provider scope ends.
-///
-/// Tests can override this with an in-memory executor:
-/// ```dart
-/// ProviderScope(
-///   overrides: [
-///     databaseProvider.overrideWithValue(inMemoryDb),
-///   ],
-///   child: const MyApp(),
-/// );
-/// ```
 @Riverpod(keepAlive: true)
 AppDatabase database(Ref ref) {
   final db = AppDatabase();
@@ -63,46 +57,112 @@ AppDatabase database(Ref ref) {
   return db;
 }
 
-/// Provides the current [DateTime] (wall-clock).
-///
-/// .NET analogue: `IClock` / `TimeProvider` abstraction — allows tests to
-/// override "now" so time-based logic is deterministic.
-///
-/// ```dart
-/// clockProvider.overrideWithValue(FixedClock(DateTime(2024, 1, 1)));
-/// ```
-///
-/// **Note:** This provider is intentionally simple for Phase 1.  It returns
-/// `DateTime.now()` at read time and does not auto-refresh.  If you need
-/// a live ticking clock, watch a `StreamProvider.periodic` instead.
 @riverpod
 DateTime clock(Ref ref) => DateTime.now();
 
-/// Provides [MedicationRepository] backed by Drift.
+final tokenStorageProvider = Provider<TokenStorage>((ref) => TokenStorage());
+
+final apiClientProvider = Provider<ApiClient>((ref) {
+  return ApiClient(tokenStorage: ref.watch(tokenStorageProvider));
+});
+
+final mediaUploadServiceProvider = Provider<MediaUploadService>((ref) {
+  return MediaUploadService(ref.watch(apiClientProvider));
+});
+
+final authRepositoryProvider = Provider<AuthRepository>((ref) {
+  return AuthRepositoryImpl(
+    apiClient: ref.watch(apiClientProvider),
+    tokenStorage: ref.watch(tokenStorageProvider),
+  );
+});
+
+final syncEngineProvider = Provider<SyncEngine>((ref) {
+  return SyncEngine(
+    apiClient: ref.watch(apiClientProvider),
+    db: ref.watch(databaseProvider),
+    prefs: ref.watch(sharedPreferencesProvider),
+  );
+});
+
+final fcmDeviceServiceProvider = Provider<FcmDeviceService>((ref) {
+  return FcmDeviceService(
+    ref.watch(apiClientProvider),
+    ref.watch(sharedPreferencesProvider),
+  );
+});
+
+final pkceCalendarServiceProvider = Provider<PkceCalendarService>((ref) {
+  return PkceCalendarService(
+    ref.watch(apiClientProvider),
+    ref.watch(sharedPreferencesProvider),
+  );
+});
+
+final calendarConnectionsProvider =
+    FutureProvider.family<List<Map<String, dynamic>>, String>((
+      ref,
+      profileId,
+    ) async {
+      final service = ref.watch(pkceCalendarServiceProvider);
+      final result = await service.getConnections(profileId: profileId);
+      return result.valueOrNull ?? [];
+    });
+
+/// Provides [MedicationRepository] backed by Drift + Offline-First Sync.
 @Riverpod(keepAlive: true)
 MedicationRepository medicationRepository(Ref ref) {
   final db = ref.watch(databaseProvider);
-  return DriftMedicationRepository(db);
+  final profile = ref.watch(currentUserProfileProvider);
+  final profileId = profile?.id ?? 'default';
+  final localRepo = DriftMedicationRepository(db, profileId: profileId);
+  final syncEngine = ref.watch(syncEngineProvider);
+  return SyncedMedicationRepository(
+    localRepo: localRepo,
+    db: db,
+    syncEngine: syncEngine,
+    profileId: profileId,
+  );
 }
 
-/// Provides [ScheduleRepository] backed by Drift.
+/// Provides [ScheduleRepository] backed by Drift + Offline-First Sync.
 @Riverpod(keepAlive: true)
 ScheduleRepository scheduleRepository(Ref ref) {
   final db = ref.watch(databaseProvider);
-  return DriftScheduleRepository(db);
+  final profile = ref.watch(currentUserProfileProvider);
+  final profileId = profile?.id ?? 'default';
+  final localRepo = DriftScheduleRepository(db, profileId: profileId);
+  final syncEngine = ref.watch(syncEngineProvider);
+  return SyncedScheduleRepository(
+    localRepo: localRepo,
+    db: db,
+    syncEngine: syncEngine,
+    profileId: profileId,
+  );
 }
 
-/// Provides [DoseEventRepository] backed by Drift.
+/// Provides [DoseEventRepository] backed by Drift + Offline-First Sync.
 @Riverpod(keepAlive: true)
 DoseEventRepository doseEventRepository(Ref ref) {
-  final repository = ref.watch(driftDoseEventRepositoryProvider);
-  return repository;
+  final db = ref.watch(databaseProvider);
+  final profile = ref.watch(currentUserProfileProvider);
+  final profileId = profile?.id ?? 'default';
+  final localRepo = ref.watch(driftDoseEventRepositoryProvider);
+  final syncEngine = ref.watch(syncEngineProvider);
+  return SyncedDoseEventRepository(
+    localRepo: localRepo,
+    db: db,
+    syncEngine: syncEngine,
+    profileId: profileId,
+  );
 }
 
 @Riverpod(keepAlive: true)
 DriftDoseEventRepository driftDoseEventRepository(Ref ref) {
   final db = ref.watch(databaseProvider);
-  return DriftDoseEventRepository(db);
+  final profile = ref.watch(currentUserProfileProvider);
+  final profileId = profile?.id ?? 'default';
+  return DriftDoseEventRepository(db, profileId: profileId);
 }
 
 /// Provides [TimelineRepository] backed by Drift.
@@ -160,8 +220,27 @@ final markDoseMissedUseCaseProvider = Provider<MarkDoseMissed>((ref) {
 });
 
 final deleteDoseEventUseCaseProvider = Provider<DeleteDoseEvent>((ref) {
-  return DeleteDoseEvent(ref.watch(doseEventRepositoryProvider));
+  return DeleteDoseEvent(
+    ref.watch(doseEventRepositoryProvider),
+    onDeleted: (id) async {
+      await ref.read(notificationSchedulerProvider).cancelForDoseEvent(id);
+      ref.read(inAppReminderServiceProvider).reevaluate();
+    },
+  );
 });
+
+final cancelRecurringNotificationsUseCaseProvider =
+    Provider<CancelRecurringNotifications>((ref) {
+      return CancelRecurringNotifications(
+        ref.watch(scheduleRepositoryProvider),
+        onCancelled: () async {
+          try {
+            await ref.read(syncNotificationsUseCaseProvider).call();
+            ref.read(inAppReminderServiceProvider).reevaluate();
+          } catch (_) {}
+        },
+      );
+    });
 
 final watchMedicationsUseCaseProvider = Provider<WatchMedications>((ref) {
   return WatchMedications(ref.watch(medicationRepositoryProvider));
@@ -225,10 +304,10 @@ final watchTimelineRangeUseCaseProvider = Provider<WatchTimelineRange>((ref) {
 final syncNotificationsUseCaseProvider = Provider<SyncNotifications>((ref) {
   return SyncNotifications(
     scheduler: ref.watch(notificationSchedulerProvider),
-    calendarSyncService: ref.watch(calendarSyncServiceProvider),
     prefsRepo: ref.watch(notificationPreferencesRepositoryProvider),
     doseRepo: ref.watch(doseEventRepositoryProvider),
     medRepo: ref.watch(medicationRepositoryProvider),
     clock: () => ref.read(clockProvider),
+    scheduleRepo: ref.watch(scheduleRepositoryProvider),
   );
 });

@@ -9,14 +9,17 @@ import 'package:my_pills/features/medications/domain/entities/medication.dart';
 import 'package:my_pills/features/medications/domain/repositories/medication_repository.dart';
 
 class DriftMedicationRepository implements MedicationRepository {
-  DriftMedicationRepository(AppDatabase db) : _dao = db.medicationDao;
+  DriftMedicationRepository(AppDatabase db, {String profileId = 'default'})
+    : _dao = db.medicationDao,
+      _profileId = profileId;
 
   final MedicationDao _dao;
+  final String _profileId;
 
   @override
   Future<Result<List<Medication>>> getAll() async {
     try {
-      final rows = await _dao.getAllMedications();
+      final rows = await _dao.getAllMedications(profileId: _profileId);
       return Result.success(
         rows.map(toMedicationEntity).toList(growable: false),
       );
@@ -30,31 +33,33 @@ class DriftMedicationRepository implements MedicationRepository {
   @override
   Stream<Result<List<Medication>>> watchAll() {
     return Stream<Result<List<Medication>>>.multi((controller) {
-      final subscription = _dao.watchAllMedications().listen(
-        (rows) {
-          try {
-            controller.add(
-              Result.success(
-                rows.map(toMedicationEntity).toList(growable: false),
-              ),
-            );
-          } on Object catch (error, stackTrace) {
-            controller.add(
-              Result.failure(
-                Failure.unexpected(error: error, stackTrace: stackTrace),
-              ),
-            );
-          }
-        },
-        onError: (Object error, StackTrace stackTrace) {
-          controller.add(
-            Result.failure(
-              Failure.unexpected(error: error, stackTrace: stackTrace),
-            ),
+      final subscription = _dao
+          .watchAllMedications(profileId: _profileId)
+          .listen(
+            (rows) {
+              try {
+                controller.add(
+                  Result.success(
+                    rows.map(toMedicationEntity).toList(growable: false),
+                  ),
+                );
+              } on Object catch (error, stackTrace) {
+                controller.add(
+                  Result.failure(
+                    Failure.unexpected(error: error, stackTrace: stackTrace),
+                  ),
+                );
+              }
+            },
+            onError: (Object error, StackTrace stackTrace) {
+              controller.add(
+                Result.failure(
+                  Failure.unexpected(error: error, stackTrace: stackTrace),
+                ),
+              );
+            },
+            onDone: controller.close,
           );
-        },
-        onDone: controller.close,
-      );
 
       controller.onCancel = subscription.cancel;
     });
@@ -79,7 +84,7 @@ class DriftMedicationRepository implements MedicationRepository {
   Future<Result<Medication>> add(Medication medication) async {
     try {
       final id = await _dao.insertMedication(
-        toMedicationInsertCompanion(medication),
+        toMedicationInsertCompanion(medication, profileId: _profileId),
       );
       final row = await _dao.getMedicationById(id);
       if (row == null) {
@@ -100,7 +105,18 @@ class DriftMedicationRepository implements MedicationRepository {
   @override
   Future<Result<Medication>> update(Medication medication) async {
     try {
-      final changed = await _dao.updateMedication(toMedicationRow(medication));
+      final existing = await _dao.getMedicationById(medication.id);
+      if (existing == null) {
+        return const Result.failure(Failure.notFound());
+      }
+      final changed = await _dao.updateMedication(
+        toMedicationRow(
+          medication,
+          clientId: existing.clientId,
+          serverId: existing.serverId,
+          profileId: existing.profileId,
+        ),
+      );
       if (!changed) {
         return const Result.failure(Failure.notFound());
       }

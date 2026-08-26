@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,17 +15,22 @@ import 'package:my_pills/features/notifications/data/services/notification_init.
 import 'package:my_pills/features/notifications/presentation/in_app_reminder_overlay.dart';
 import 'package:my_pills/features/notifications/presentation/oem_setup_dialog.dart';
 import 'package:my_pills/features/notifications/presentation/providers/notification_providers.dart';
+import 'package:my_pills/features/profile/presentation/providers/profile_providers.dart';
 import 'package:my_pills/l10n/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  try {
+    await Firebase.initializeApp();
+  } catch (_) {}
+  mlog('mypills.fcm', 'Handling background message: ${message.messageId}');
+}
+
 /// Resolves the local IANA timezone with multiple fallback strategies and
-/// applies it to the `timezone` package. If everything fails we leave it as
-/// UTC and log loudly — this is a critical bug for `zonedSchedule`, since
-/// schedule times computed from local DateTimes get reinterpreted as UTC,
-/// which on a non-UTC device places them in the past and the OS drops them
-/// without firing.
+/// applies it to the `timezone` package.
 Future<void> _setUpTimezone() async {
   String? identifier;
   try {
@@ -34,33 +41,55 @@ Future<void> _setUpTimezone() async {
     mlog('mypills.boot', 'FlutterTimezone failed: $e');
   }
 
-  if (identifier != null) {
+  tz.initializeTimeZones();
+  if (identifier != null && identifier.isNotEmpty) {
     try {
       tz.setLocalLocation(tz.getLocation(identifier));
-      mlog('mypills.boot', 'tz.local set to $identifier');
+      mlog('mypills.boot', 'tz.local successfully set to $identifier');
       return;
     } catch (e) {
-      mlog('mypills.boot', 'tz.getLocation($identifier) failed: $e');
+      mlog('mypills.boot', 'tz.getLocation("$identifier") failed: $e');
     }
   }
 
-  // Fallback: use the device's offset to locate a matching tz database entry.
-  final offset = DateTime.now().timeZoneOffset;
-  final tzName = DateTime.now().timeZoneName;
-  mlog(
-    'mypills.boot',
-    'fallback offset=$offset name=$tzName — keeping tz.local=${tz.local.name} (likely UTC)',
-  );
+  // Fallback 1: match by GMT offset
+  final offsetHours = DateTime.now().timeZoneOffset.inHours;
+  final sign = offsetHours >= 0 ? '+' : '-';
+  final offsetName = 'Etc/GMT$sign${offsetHours.abs()}';
+  try {
+    tz.setLocalLocation(tz.getLocation(offsetName));
+    mlog('mypills.boot', 'tz.local set to fallback offset: $offsetName');
+    return;
+  } catch (_) {}
+
+  // Fallback 2: America/Mexico_City for Mexico Central Standard Time (GMT-6)
+  if (offsetHours == -6) {
+    try {
+      tz.setLocalLocation(tz.getLocation('America/Mexico_City'));
+      mlog('mypills.boot', 'tz.local set to fallback America/Mexico_City');
+      return;
+    } catch (_) {}
+  }
+
+  // Last resort: UTC
+  mlog('mypills.boot', 'WARNING: tz.local defaulted to UTC');
 }
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  tz.initializeTimeZones();
+  // Non-fatal crash isolation: initialize Firebase Core & Messaging safely
+  try {
+    await Firebase.initializeApp();
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  } catch (e, st) {
+    mlog('mypills.boot', 'Firebase init failed (non-fatal): $e\n$st');
+  }
+
   await _setUpTimezone();
 
-  final plugin = await initNotifications();
   final prefs = await SharedPreferences.getInstance();
+  final plugin = await initNotifications();
 
   runApp(
     ProviderScope(
@@ -87,9 +116,63 @@ class _MyPillsBootstrapState extends ConsumerState<MyPillsBootstrap>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     unawaited(ref.read(reconciliationBootstrapProvider.future));
-    // Eager-create the in-app reminder service so it starts watching doses
-    // immediately, not when the overlay first listens.
     ref.read(inAppReminderServiceProvider);
+
+    // Eager initialize FCM push receiver
+    try {
+      final fcmService = ref.read(fcmDeviceServiceProvider);
+      unawaited(
+        fcmService.initialize(
+          onForegroundMessage: (message) async {
+            mlog('mypills.fcm', 'Foreground push received: ${message.data}');
+            final data = message.data;
+            final action = data['action'] ?? data['type'];
+            if (action == 'cancel' ||
+                action == 'cancel_notification' ||
+                action == 'dose_cancelled' ||
+                data.containsKey('cancelDoseEventId')) {
+              final doseIdStr =
+                  data['doseEventId'] ??
+                  data['cancelDoseEventId'] ??
+                  data['id'];
+              if (doseIdStr != null) {
+                final str = doseIdStr.toString();
+                final parsedId = int.tryParse(str);
+                if (parsedId != null) {
+                  await ref
+                      .read(notificationSchedulerProvider)
+                      .cancelForDoseEvent(parsedId);
+                } else {
+                  final db = ref.read(databaseProvider);
+                  final localRow = await (db.select(
+                    db.doseEventsTable,
+                  )..where((t) => t.serverId.equals(str))).getSingleOrNull();
+                  if (localRow != null) {
+                    await ref
+                        .read(notificationSchedulerProvider)
+                        .cancelForDoseEvent(localRow.id);
+                  }
+                }
+              }
+              unawaited(ref.read(syncNotificationsUseCaseProvider).call());
+            } else if (action == 'cancel_recurring' ||
+                action == 'recurring_cancelled' ||
+                data.containsKey('cancelRecurring')) {
+              await ref.read(notificationSchedulerProvider).cancelAll();
+              unawaited(ref.read(syncNotificationsUseCaseProvider).call());
+            }
+
+            final profile = ref.read(currentUserProfileProvider);
+            if (profile != null && profile.id != 'default') {
+              unawaited(ref.read(syncEngineProvider).syncProfile(profile.id));
+            }
+            ref.read(inAppReminderServiceProvider).reevaluate();
+          },
+        ),
+      );
+    } catch (e) {
+      mlog('mypills.boot', 'FCM service init error: $e');
+    }
   }
 
   @override

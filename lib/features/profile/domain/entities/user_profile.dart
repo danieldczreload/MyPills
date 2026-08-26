@@ -5,10 +5,12 @@ part 'user_profile.freezed.dart';
 @freezed
 abstract class UserProfile with _$UserProfile {
   const factory UserProfile({
+    @Default('default') String id,
     required String name,
     required DateTime birthDate,
     required String gender, // 'male' | 'female' | 'other'
     String? photoPath, // local file path from image_picker
+    @Default(false) bool isDefault,
   }) = _UserProfile;
 
   const UserProfile._();

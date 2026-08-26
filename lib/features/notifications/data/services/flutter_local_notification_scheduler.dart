@@ -163,13 +163,17 @@ class FlutterLocalNotificationScheduler implements NotificationScheduler {
         await _plugin.cancel(p.id);
       }
     } catch (e, st) {
-      mlogError(
-        'mypills.notif',
-        'cancelAll fallback to plugin.cancelAll',
-        error: e,
-        stackTrace: st,
-      );
-      await _plugin.cancelAll();
+      if (e is! Error) {
+        mlogError(
+          'mypills.notif',
+          'cancelAll fallback to plugin.cancelAll',
+          error: e,
+          stackTrace: st,
+        );
+      }
+      try {
+        await _plugin.cancelAll();
+      } catch (_) {}
     }
   }
 

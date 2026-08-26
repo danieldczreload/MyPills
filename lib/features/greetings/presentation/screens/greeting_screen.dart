@@ -92,9 +92,11 @@ class _GreetingScreenState extends ConsumerState<GreetingScreen> {
                         _GreetingCard(
                           icon: Icons.light_mode_rounded,
                           title: greetingText,
-                          message: PersonalConfig.personalMessageLines.join(
-                            ' ',
-                          ),
+                          message:
+                              PersonalConfig.showPersonalMessage &&
+                                  PersonalConfig.personalMessageLines.isNotEmpty
+                              ? PersonalConfig.personalMessageLines.join(' ')
+                              : l10n.greetingGenericWelcome,
                           buttonLabel: l10n.welcomeContinueButton,
                           onPressed: () {
                             if (_pageController.hasClients) {

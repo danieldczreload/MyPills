@@ -1,28 +1,15 @@
-import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:my_pills/app/router.dart';
+import 'package:my_pills/core/widgets/app_avatar.dart';
 import 'package:my_pills/features/profile/presentation/providers/profile_providers.dart';
+import 'package:my_pills/features/profile/presentation/widgets/profile_switch_sheet.dart';
 import 'package:my_pills/l10n/app_localizations.dart';
 
 /// Standardized frosted-glass AppBar used across all screens.
-///
-/// Implements the "Serene Precision" header pattern from DESIGN.md:
-/// - Semi-transparent white surface with 20dp backdrop blur (glass surface token)
-/// - 40×40 circular avatar (person icon placeholder)
-/// - Bold primary-color brand title
-/// - Notifications icon button on the trailing edge
-///
-/// Usage:
-/// ```dart
-/// Scaffold(
-///   extendBodyBehindAppBar: true,
-///   appBar: SanctuaryAppBar(),
-/// )
-/// ```
 class SanctuaryAppBar extends ConsumerWidget implements PreferredSizeWidget {
   const SanctuaryAppBar({this.title, this.onBack, super.key});
 
@@ -64,29 +51,29 @@ class SanctuaryAppBar extends ConsumerWidget implements PreferredSizeWidget {
               ),
             )
           : GestureDetector(
-              onTap: () => context.push(AppRoutes.editProfile),
+              onTap: () => showProfileSwitchSheet(context),
               child: Row(
                 children: [
-                  CircleAvatar(
+                  AppAvatar(
+                    photoPath: profile?.photoPath,
                     radius: 20,
-                    backgroundColor: theme.colorScheme.surfaceContainerHigh,
-                    backgroundImage: profile?.photoPath != null
-                        ? FileImage(File(profile!.photoPath!))
-                        : null,
-                    child: profile?.photoPath == null
-                        ? Icon(
-                            Icons.person,
-                            color: theme.colorScheme.onSurfaceVariant,
-                          )
-                        : null,
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    profile?.name ?? l10n.appTitle,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.primary,
+                  Flexible(
+                    child: Text(
+                      profile?.name ?? l10n.appTitle,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.primary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.unfold_more_rounded,
+                    size: 18,
+                    color: theme.colorScheme.primary.withValues(alpha: 0.7),
                   ),
                 ],
               ),

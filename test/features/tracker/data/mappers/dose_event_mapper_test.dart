@@ -12,6 +12,9 @@ void main() {
         scheduleId: 100,
         scheduledAtUtc: DateTime(2024, 6, 10, 8).toUtc(),
         status: 'pending',
+        profileId: 'default',
+        syncStatus: 'synced',
+        isTombstone: false,
       );
 
       final entity = toDoseEventEntity(row);
@@ -32,6 +35,9 @@ void main() {
         scheduledAtUtc: DateTime(2024, 6, 10, 14).toUtc(),
         status: 'taken',
         takenAtUtc: DateTime(2024, 6, 10, 14, 5).toUtc(),
+        profileId: 'default',
+        syncStatus: 'synced',
+        isTombstone: false,
       );
 
       final entity = toDoseEventEntity(row);
@@ -47,6 +53,9 @@ void main() {
         scheduleId: 300,
         scheduledAtUtc: DateTime(2024, 6, 10, 20).toUtc(),
         status: 'missed',
+        profileId: 'default',
+        syncStatus: 'synced',
+        isTombstone: false,
       );
 
       final entity = toDoseEventEntity(row);

@@ -1,19 +1,16 @@
 import 'dart:developer' as developer;
-import 'package:my_pills/core/utils/log.dart';
-
 import 'package:my_pills/core/utils/clock.dart';
+import 'package:my_pills/core/utils/log.dart';
 import 'package:my_pills/features/medications/domain/entities/medication.dart';
 import 'package:my_pills/features/medications/domain/repositories/medication_repository.dart';
 import 'package:my_pills/features/notifications/domain/entities/notification_preferences.dart';
 import 'package:my_pills/features/notifications/domain/repositories/notification_preferences_repository.dart';
-import 'package:my_pills/features/notifications/domain/services/calendar_sync_service.dart';
 import 'package:my_pills/features/notifications/domain/services/notification_scheduler.dart';
+import 'package:my_pills/features/schedules/domain/entities/schedule.dart';
+import 'package:my_pills/features/schedules/domain/repositories/schedule_repository.dart';
 import 'package:my_pills/features/tracker/domain/repositories/dose_event_repository.dart';
 
-/// Snapshot of the most recent [SyncNotifications] run. Surfaced in the
-/// diagnostic UI so the user can tell exactly why notifications did or did
-/// not fire — every silent return path in the previous version is now
-/// captured here.
+/// Snapshot of the most recent [SyncNotifications] run.
 class SyncReport {
   SyncReport();
 
@@ -22,9 +19,6 @@ class SyncReport {
   int dosesFound = 0;
   int pushScheduled = 0;
   bool pushSkipped = false;
-  CalendarSyncReport? calendar;
-  bool calendarSkipped = false;
-  String? calendarSkipReason;
   String? error;
 
   String get oneLine {
@@ -32,45 +26,37 @@ class SyncReport {
     final pp = prefs == null
         ? 'prefs=?'
         : 'push=${prefs!.pushNotificationsEnabled} '
-              'cal=${prefs!.calendarSyncEnabled} '
               'min=${prefs!.reminderMinutesBefore}';
-    final calStr = calendar == null
-        ? (calendarSkipped ? 'cal:skip(${calendarSkipReason ?? "?"})' : 'cal:-')
-        : 'cal:created=${calendar!.created} failed=${calendar!.failed} '
-              '${calendar!.permissionDenied ? "noperm " : ""}'
-              '${calendar!.calendarMissing ? "missing " : ""}';
     final err = error == null ? '' : ' ERROR=$error';
     return '$ts | $pp | doses=$dosesFound push=$pushScheduled '
-        '${pushSkipped ? "(skipped) " : ""}| $calStr$err';
+        '${pushSkipped ? "(skipped) " : ""}$err';
   }
 }
 
 class SyncNotifications {
   SyncNotifications({
     required NotificationScheduler scheduler,
-    required CalendarSyncService calendarSyncService,
     required NotificationPreferencesRepository prefsRepo,
     required DoseEventRepository doseRepo,
     required MedicationRepository medRepo,
     required Clock clock,
+    ScheduleRepository? scheduleRepo,
   }) : _scheduler = scheduler,
-       _calendarSyncService = calendarSyncService,
        _prefsRepo = prefsRepo,
        _doseRepo = doseRepo,
        _medRepo = medRepo,
-       _clock = clock;
+       _clock = clock,
+       _scheduleRepo = scheduleRepo;
 
   final NotificationScheduler _scheduler;
-  final CalendarSyncService _calendarSyncService;
   final NotificationPreferencesRepository _prefsRepo;
   final DoseEventRepository _doseRepo;
   final MedicationRepository _medRepo;
   final Clock _clock;
+  final ScheduleRepository? _scheduleRepo;
 
   Future<void> _currentSync = Future.value();
 
-  /// The result of the most recent sync run. `null` until [call] has run at
-  /// least once.
   SyncReport? lastReport;
 
   Future<void> call() {
@@ -94,29 +80,21 @@ class SyncNotifications {
     try {
       final prefs = _prefsRepo.load();
       report.prefs = prefs;
-      developer.log(
-        'sync start prefs push=${prefs.pushNotificationsEnabled} '
-        'cal=${prefs.calendarSyncEnabled} '
-        'minBefore=${prefs.reminderMinutesBefore} '
-        'calId=${prefs.defaultCalendarId}',
-        name: 'mypills.sync',
-      );
 
-      // Always wipe first so removed schedules disappear from the OS queue.
+      // Always clear previous local OS scheduler queue to prevent duplicate / outdated alarms.
       await _scheduler.cancelAll();
 
-      if (!prefs.pushNotificationsEnabled && !prefs.calendarSyncEnabled) {
-        mlog('mypills.sync', 'both disabled — nothing to do');
+      if (!prefs.pushNotificationsEnabled) {
         report.pushSkipped = true;
-        report.calendarSkipped = true;
-        report.calendarSkipReason = 'disabled';
         return;
       }
 
       final now = _clock();
       final end = now.add(const Duration(days: 14));
 
-      final dosesResult = await _doseRepo.getForDateRange(now, end);
+      final futureDoses = _doseRepo.getForDateRange(now, end);
+      final futureMeds = _medRepo.getAll();
+      final dosesResult = await futureDoses;
       final doses = dosesResult.valueOrNull;
       if (doses == null) {
         report.error = 'doseRepo.getForDateRange returned null/failure';
@@ -124,74 +102,55 @@ class SyncNotifications {
         return;
       }
       report.dosesFound = doses.length;
-      mlog('mypills.sync', 'found ${doses.length} doses in window');
 
-      final medsResult = await _medRepo.getAll();
+      final medsResult = await futureMeds;
       final meds = medsResult.valueOrNull;
       if (meds == null) {
         report.error = 'medRepo.getAll returned null/failure';
         mlog('mypills.sync', report.error!);
         return;
       }
-      final medsMap = {for (final m in meds) m.id: m};
 
-      // Push and calendar are isolated: a failure in one must not block the
-      // other. Each step records its outcome on the report.
-      if (prefs.pushNotificationsEnabled) {
+      var pushDoses = doses;
+      if (_scheduleRepo != null) {
         try {
-          await _scheduler.scheduleForDoseEvents(
-            doses,
-            minutesBefore: prefs.reminderMinutesBefore,
-            titleBuilder: (_) => 'Hora de tu medicación',
-            bodyBuilder: (dose) {
-              final med = medsMap[dose.medicationId] ?? _fallbackMed;
-              return 'Es hora de tomar ${med.name}';
-            },
-          );
-          report.pushScheduled = await _scheduler.pendingCount();
-        } catch (e, st) {
-          report.error =
-              '${report.error == null ? '' : '${report.error!} | '}push: $e';
-          developer.log(
-            'push scheduling threw: $e',
-            name: 'mypills.sync',
-            error: e,
-            stackTrace: st,
-          );
-        }
-      } else {
-        report.pushSkipped = true;
+          final schedRes = await _scheduleRepo.getAll();
+          final schedules = schedRes.valueOrNull;
+          if (schedules != null) {
+            final disabledSchedIds = <int>{};
+            for (final s in schedules) {
+              final notifyPush = switch (s) {
+                DailySchedule(:final notifyPush) => notifyPush,
+                DailyIntervalSchedule(:final notifyPush) => notifyPush,
+                SpecificDaysSchedule(:final notifyPush) => notifyPush,
+              };
+              if (!notifyPush) {
+                disabledSchedIds.add(s.id);
+              }
+            }
+            if (disabledSchedIds.isNotEmpty) {
+              pushDoses = doses
+                  .where((d) => !disabledSchedIds.contains(d.scheduleId))
+                  .toList();
+            }
+          }
+        } catch (_) {}
       }
 
-      if (prefs.calendarSyncEnabled && prefs.defaultCalendarId != null) {
-        try {
-          report.calendar = await _calendarSyncService.syncDoseEventsToCalendar(
-            doses,
-            calendarId: prefs.defaultCalendarId!,
-            reminderMinutesBefore: prefs.reminderMinutesBefore,
-            titleBuilder: (dose) {
-              final med = medsMap[dose.medicationId] ?? _fallbackMed;
-              return 'Tomar ${med.name}';
-            },
-            notesBuilder: (_) =>
-                'Recordatorio automático generado por MyPills.',
-          );
-        } catch (e, st) {
-          report.error =
-              '${report.error == null ? '' : '${report.error!} | '}cal: $e';
-          developer.log(
-            'calendar sync threw: $e',
-            name: 'mypills.sync',
-            error: e,
-            stackTrace: st,
-          );
-        }
-      } else {
-        report.calendarSkipped = true;
-        report.calendarSkipReason = !prefs.calendarSyncEnabled
-            ? 'disabled'
-            : 'no calendar selected';
-      }
+      final medMap = {for (final m in meds) m.id: m};
+      await _scheduler.scheduleForDoseEvents(
+        pushDoses,
+        minutesBefore: prefs.reminderMinutesBefore,
+        titleBuilder: (dose) {
+          final med = medMap[dose.medicationId] ?? fallbackMed;
+          return 'Recordatorio: ${med.name}';
+        },
+        bodyBuilder: (dose) {
+          final med = medMap[dose.medicationId] ?? fallbackMed;
+          return 'Es hora de tomar tu dosis de ${med.name}';
+        },
+      );
+      report.pushScheduled = pushDoses.length;
 
       mlog('mypills.sync', report.oneLine);
     } catch (e, st) {
@@ -205,7 +164,7 @@ class SyncNotifications {
     }
   }
 
-  static const Medication _fallbackMed = Medication(
+  static const Medication fallbackMed = Medication(
     id: 0,
     name: 'Medicación',
     form: MedicationForm.pill,

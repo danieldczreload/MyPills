@@ -15,6 +15,9 @@ void main() {
               '{"timesOfDay":[{"hour":8,"minute":0},{"hour":20,"minute":30}]}',
           startDateUtc: DateTime(2024, 6, 10).toUtc(),
           endDateUtc: DateTime(2024, 6, 20).toUtc(),
+          profileId: 'default',
+          syncStatus: 'synced',
+          isTombstone: false,
         );
 
         final entity = toScheduleEntity(row);
@@ -40,6 +43,9 @@ void main() {
               '{"everyHours":4,"startAt":{"hour":8,"minute":0},'
               '"endAt":{"hour":20,"minute":0}}',
           startDateUtc: DateTime(2024, 6, 10).toUtc(),
+          profileId: 'default',
+          syncStatus: 'synced',
+          isTombstone: false,
         );
 
         final entity = toScheduleEntity(row);
@@ -60,6 +66,9 @@ void main() {
           ruleJson:
               '{"everyHours":6,"startAt":{"hour":22,"minute":0},"endAt":null}',
           startDateUtc: DateTime(2024, 6, 10).toUtc(),
+          profileId: 'default',
+          syncStatus: 'synced',
+          isTombstone: false,
         );
 
         final entity = toScheduleEntity(row);
@@ -78,6 +87,9 @@ void main() {
               '{"daysOfWeek":[1,3,5],"timesOfDay":[{"hour":9,"minute":0}]}',
           startDateUtc: DateTime(2024, 6, 10).toUtc(),
           endDateUtc: DateTime(2024, 7, 10).toUtc(),
+          profileId: 'default',
+          syncStatus: 'synced',
+          isTombstone: false,
         );
 
         final entity = toScheduleEntity(row);
@@ -96,6 +108,9 @@ void main() {
           ruleType: 'unknown',
           ruleJson: '{}',
           startDateUtc: DateTime(2024, 6, 10).toUtc(),
+          profileId: 'default',
+          syncStatus: 'synced',
+          isTombstone: false,
         );
 
         expect(() => toScheduleEntity(row), throwsFormatException);
@@ -118,7 +133,7 @@ void main() {
         expect(companion.ruleType.value, 'daily');
         expect(
           companion.ruleJson.value,
-          '{"timesOfDay":[{"hour":8,"minute":0}]}',
+          '{"timesOfDay":[{"hour":8,"minute":0}],"notifyPush":true,"notifyCalendar":false}',
         );
         expect(companion.startDateUtc.value, DateTime(2024, 6, 10).toUtc());
         expect(companion.endDateUtc.value, DateTime(2024, 6, 20).toUtc());
@@ -140,7 +155,7 @@ void main() {
         expect(
           companion.ruleJson.value,
           '{"everyHours":4,"startAt":{"hour":8,"minute":0},'
-          '"endAt":{"hour":20,"minute":0}}',
+          '"endAt":{"hour":20,"minute":0},"notifyPush":true,"notifyCalendar":false}',
         );
         expect(companion.endDateUtc.present, isTrue);
         expect(companion.endDateUtc.value, isNull);
@@ -160,7 +175,7 @@ void main() {
         expect(companion.ruleType.value, 'specific_days');
         expect(
           companion.ruleJson.value,
-          '{"daysOfWeek":[1,3,5],"timesOfDay":[{"hour":9,"minute":0}]}',
+          '{"daysOfWeek":[1,3,5],"timesOfDay":[{"hour":9,"minute":0}],"notifyPush":true,"notifyCalendar":false}',
         );
       });
     });

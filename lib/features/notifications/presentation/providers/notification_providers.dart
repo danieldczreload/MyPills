@@ -1,27 +1,21 @@
+import 'dart:async';
+
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:device_calendar/device_calendar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_pills/app/providers.dart';
 import 'package:my_pills/features/notifications/data/repositories/shared_prefs_notification_preferences_repository.dart';
-import 'package:my_pills/features/notifications/data/services/device_calendar_sync_service.dart';
 import 'package:my_pills/features/notifications/data/services/flutter_local_notification_scheduler.dart';
+import 'package:my_pills/features/notifications/data/services/remote_notification_preferences_service.dart';
 import 'package:my_pills/features/notifications/domain/entities/notification_preferences.dart';
 import 'package:my_pills/features/notifications/domain/repositories/notification_preferences_repository.dart';
-import 'package:my_pills/features/notifications/domain/services/calendar_sync_service.dart';
 import 'package:my_pills/features/notifications/domain/services/in_app_reminder_service.dart';
 import 'package:my_pills/features/notifications/domain/services/notification_scheduler.dart';
 import 'package:my_pills/features/tracker/domain/entities/dose_event.dart';
 
-final deviceCalendarPluginProvider = Provider<DeviceCalendarPlugin>((ref) {
-  return DeviceCalendarPlugin();
-});
-
-final calendarSyncServiceProvider = Provider<CalendarSyncService>((ref) {
-  return DeviceCalendarSyncService(
-    ref.watch(deviceCalendarPluginProvider),
-    ref.watch(sharedPreferencesProvider),
-  );
-});
+final remoteNotificationPreferencesServiceProvider =
+    Provider<RemoteNotificationPreferencesService>((ref) {
+      return RemoteNotificationPreferencesService(ref.watch(apiClientProvider));
+    });
 
 final notificationPreferencesRepositoryProvider =
     Provider<NotificationPreferencesRepository>((ref) {
@@ -43,9 +37,16 @@ class NotificationPreferencesNotifier
     NotificationPreferences Function(NotificationPreferences) updater,
   ) async {
     final newState = updater(state);
+    if (newState == state) return;
     state = newState;
     await _repository.save(newState);
     await ref.read(syncNotificationsUseCaseProvider).call();
+
+    unawaited(
+      ref
+          .read(remoteNotificationPreferencesServiceProvider)
+          .updatePreferences(newState),
+    );
   }
 }
 

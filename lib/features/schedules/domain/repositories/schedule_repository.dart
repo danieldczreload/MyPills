@@ -23,4 +23,14 @@ abstract interface class ScheduleRepository {
 
   /// Removes the schedule and all related future dose events.
   Future<Result<void>> delete(int id);
+
+  /// Cancels recurring notifications and synchronized calendar events for a schedule
+  /// (or all schedules for a medication), optionally deleting the schedule if [deleteSchedule] is true.
+  Future<Result<void>> cancelRecurring({
+    int? scheduleId,
+    int? medicationId,
+    bool cancelPush = true,
+    bool cancelCalendar = true,
+    bool deleteSchedule = false,
+  });
 }
