@@ -1,7 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:my_pills/core/errors/failure.dart';
 import 'package:my_pills/core/network/api_client.dart';
+import 'package:my_pills/core/result/result.dart';
 import 'package:my_pills/features/calendar_integration/data/services/pkce_calendar_service.dart';
 
 class MockApiClient extends Mock implements ApiClient {}
@@ -108,6 +110,50 @@ void main() {
       final result = await service.syncCalendar(profileId: 'prof_1');
       expect(result.isSuccess, isTrue);
     });
+
+    test(
+      'syncCalendar maps per-link reason from SYNC_PARTIAL_FAILURE',
+      () async {
+        when(
+          () => mockDio.post<Map<String, dynamic>>(
+            '/calendars/sync',
+            queryParameters: any(named: 'queryParameters'),
+          ),
+        ).thenAnswer(
+          (_) async => throw DioException(
+            requestOptions: RequestOptions(path: '/calendars/sync'),
+            response: Response(
+              requestOptions: RequestOptions(path: '/calendars/sync'),
+              statusCode: 400,
+              data: {
+                'error': {
+                  'type': 'SYNC_PARTIAL_FAILURE',
+                  'message':
+                      'Some calendar connections could not be synchronized.',
+                  'details': {
+                    'links': [
+                      {'provider': 'google', 'reason': 'REFRESH_FAILED'},
+                    ],
+                  },
+                },
+              },
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+        );
+
+        final result = await service.syncCalendar(profileId: 'prof_1');
+        expect(result.isFailure, isTrue);
+        expect(
+          result,
+          isA<FailureResult<Map<String, dynamic>>>().having(
+            (r) => (r.failure as ServerFailure).message,
+            'message',
+            'REFRESH_FAILED',
+          ),
+        );
+      },
+    );
 
     test('getConnections returns list of provider maps on 200', () async {
       when(

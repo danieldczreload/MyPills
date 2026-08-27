@@ -356,7 +356,7 @@ class PkceCalendarService {
             return Result.failure(
               Failure.server(
                 statusCode: e.response!.statusCode!,
-                message: error['message'] as String?,
+                message: _syncFailureMessage(error),
               ),
             );
           }
@@ -407,5 +407,21 @@ class PkceCalendarService {
     } catch (e, st) {
       return Result.failure(Failure.unexpected(error: e, stackTrace: st));
     }
+  }
+
+  /// Prefers the first per-link sync reason so the UI can map
+  /// `REFRESH_FAILED` / `REAUTH_REQUIRED` instead of a generic 400.
+  String? _syncFailureMessage(Map<String, dynamic> error) {
+    final details = error['details'];
+    if (details is Map<String, dynamic>) {
+      final links = details['links'];
+      if (links is List && links.isNotEmpty) {
+        final first = links.first;
+        if (first is Map && first['reason'] is String) {
+          return first['reason'] as String;
+        }
+      }
+    }
+    return error['message'] as String?;
   }
 }

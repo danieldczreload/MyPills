@@ -480,10 +480,13 @@ class _CloudCalendarCardState extends ConsumerState<_CloudCalendarCard> {
         };
       } else {
         await _fetchConnections();
+        if (!mounted) return;
         AppNotification.showSuccess(
           context,
           'Google Calendar conectado',
         );
+        await _syncNow();
+        return;
       }
     } catch (e) {
       if (!mounted) return;
@@ -593,6 +596,11 @@ class _CloudCalendarCardState extends ConsumerState<_CloudCalendarCard> {
             'Sincronización exitosa: $created creados, $updated actualizados';
       }
       AppNotification.showInfo(context, message);
+    } else if (result case FailureResult(:final failure)) {
+      AppNotification.showError(
+        context,
+        _describeSyncFailure(failure),
+      );
     } else {
       AppNotification.showError(
         context,
@@ -601,23 +609,35 @@ class _CloudCalendarCardState extends ConsumerState<_CloudCalendarCard> {
     }
   }
 
+  String _describeSyncFailure(Failure failure) {
+    if (failure is ServerFailure && failure.message != null) {
+      return _messageForReason(failure.message!) ??
+          'No se pudo sincronizar el calendario en la nube';
+    }
+    return 'No se pudo sincronizar el calendario en la nube';
+  }
+
   String _describeSkips(List<String> reasons) {
-    if (reasons.any((r) => r == 'UPSERT_FAILED' || r == 'REFRESH_FAILED')) {
-      return 'No se pudo sincronizar con el proveedor de calendario';
-    }
-    if (reasons.contains('REAUTH_REQUIRED')) {
-      return 'Reautoriza la conexión de calendario e intenta de nuevo';
-    }
-    if (reasons.contains('NO_MEDICATIONS')) {
-      return 'Sin medicamentos registrados: no hay eventos que sincronizar';
-    }
-    if (reasons.contains('NO_SCHEDULES')) {
-      return 'Sin horarios activos: no hay eventos que sincronizar';
-    }
-    if (reasons.contains('NO_UPCOMING_DOSE_EVENTS')) {
-      return 'No hay dosis próximas en los siguientes 14 días';
+    for (final reason in reasons) {
+      final message = _messageForReason(reason);
+      if (message != null) return message;
     }
     return 'Sincronización completada: no hay eventos por crear';
+  }
+
+  String? _messageForReason(String reason) {
+    return switch (reason) {
+      'UPSERT_FAILED' || 'REFRESH_FAILED' =>
+        'No se pudo sincronizar con el proveedor de calendario',
+      'REAUTH_REQUIRED' =>
+        'Reautoriza la conexión de calendario e intenta de nuevo',
+      'NO_MEDICATIONS' =>
+        'Sin medicamentos registrados: no hay eventos que sincronizar',
+      'NO_SCHEDULES' => 'Sin horarios activos: no hay eventos que sincronizar',
+      'NO_UPCOMING_DOSE_EVENTS' =>
+        'No hay dosis próximas en los siguientes 14 días',
+      _ => null,
+    };
   }
 
   @override

@@ -702,6 +702,8 @@ class _DailySchedulerScreenState extends ConsumerState<DailySchedulerScreen> {
     }
 
     if (_notifyCalendar && hasConnectedCalendar) {
+      await syncEngine.flushOutbox();
+      if (!mounted) return;
       unawaited(
         ref
             .read(pkceCalendarServiceProvider)
@@ -720,7 +722,8 @@ class _DailySchedulerScreenState extends ConsumerState<DailySchedulerScreen> {
       AppNotification.showSuccess(
         context,
         _notifyCalendar
-            ? 'Horario guardado y sincronizado con tu calendario.'
+            ? 'Horario guardado. Los eventos se sincronizarán '
+                  'con tu calendario.'
             : 'Horario guardado correctamente.',
       );
     }

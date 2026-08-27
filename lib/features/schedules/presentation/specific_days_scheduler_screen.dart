@@ -672,6 +672,8 @@ class _SpecificDaysSchedulerScreenState
     }
 
     if (_notifyCalendar && hasConnectedCalendar) {
+      await syncEngine.flushOutbox();
+      if (!mounted) return;
       unawaited(
         ref
             .read(pkceCalendarServiceProvider)
@@ -690,7 +692,8 @@ class _SpecificDaysSchedulerScreenState
       AppNotification.showSuccess(
         context,
         _notifyCalendar
-            ? 'Horario guardado y sincronizado con tu calendario.'
+            ? 'Horario guardado. Los eventos se sincronizarán '
+                  'con tu calendario.'
             : 'Horario guardado correctamente.',
       );
     }
