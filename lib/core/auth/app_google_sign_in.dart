@@ -7,7 +7,11 @@ import 'package:my_pills/core/config/env_config.dart';
 /// wins, so every feature (login and calendar connect) must reuse this object
 /// instead of building its own with different parameters.
 final GoogleSignIn appGoogleSignIn = GoogleSignIn(
-  scopes: const ['email', 'profile'],
+  scopes: const [
+    'email',
+    'profile',
+    EnvConfig.googleCalendarScope,
+  ],
   serverClientId: EnvConfig.effectiveGoogleServerClientId.isNotEmpty
       ? EnvConfig.effectiveGoogleServerClientId
       : null,

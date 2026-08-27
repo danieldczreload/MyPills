@@ -423,9 +423,11 @@ class _CloudCalendarCardState extends ConsumerState<_CloudCalendarCard> {
     String? message;
     setState(() => _isLoading = true);
     try {
-      var account = appGoogleSignIn.currentUser;
-      account ??= await appGoogleSignIn.signInSilently();
-      account ??= await appGoogleSignIn.signIn();
+      // Drop the login-only grant. signOut() + silent sign-in reuses the
+      // original email/profile token (no calendar scope) and Google Calendar
+      // then returns 403 ACCESS_TOKEN_SCOPE_INSUFFICIENT.
+      await appGoogleSignIn.disconnect();
+      final account = await appGoogleSignIn.signIn();
       if (!mounted) return;
 
       if (account == null) {
@@ -447,16 +449,9 @@ class _CloudCalendarCardState extends ConsumerState<_CloudCalendarCard> {
         return;
       }
 
-      // Android does not refresh serverAuthCode after requestScopes; force a
-      // silent re-sign-in so the code includes the newly granted scope.
-      await appGoogleSignIn.signOut();
-      final fresh =
-          await appGoogleSignIn.signInSilently() ??
-          await appGoogleSignIn.signIn();
-      if (!mounted) return;
-
-      final serverAuthCode = fresh?.serverAuthCode;
-      if (fresh == null || serverAuthCode == null || serverAuthCode.isEmpty) {
+      final serverAuthCode =
+          account.serverAuthCode ?? appGoogleSignIn.currentUser?.serverAuthCode;
+      if (serverAuthCode == null || serverAuthCode.isEmpty) {
         setState(() => _isLoading = false);
         AppNotification.showError(
           context,
@@ -627,7 +622,9 @@ class _CloudCalendarCardState extends ConsumerState<_CloudCalendarCard> {
 
   String? _messageForReason(String reason) {
     return switch (reason) {
-      'UPSERT_FAILED' || 'REFRESH_FAILED' =>
+      'UPSERT_FAILED' =>
+        'Google no autorizó el calendario. Desconecta y vuelve a conectar aceptando el permiso.',
+      'REFRESH_FAILED' =>
         'No se pudo sincronizar con el proveedor de calendario',
       'REAUTH_REQUIRED' =>
         'Reautoriza la conexión de calendario e intenta de nuevo',
