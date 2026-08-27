@@ -5,6 +5,7 @@ import 'package:my_pills/app/providers.dart';
 import 'package:my_pills/app/router.dart';
 import 'package:my_pills/core/result/result.dart';
 import 'package:my_pills/core/theme/serene_theme.dart';
+import 'package:my_pills/core/widgets/app_notification.dart';
 import 'package:my_pills/core/widgets/sanctuary_app_bar.dart';
 import 'package:my_pills/core/widgets/soft_input_field.dart';
 import 'package:my_pills/features/medications/domain/entities/medication.dart';
@@ -213,14 +214,20 @@ class _MedicationListScreenState extends ConsumerState<MedicationListScreen> {
     if (!mounted) return false;
 
     if (result case FailureResult()) {
-      messenger.showSnackBar(
-        SnackBar(content: Text(l10n.errorUnexpected)),
+      AppNotification.showWithMessenger(
+        messenger,
+        context: context,
+        message: l10n.errorUnexpected,
+        tone: AppNotificationTone.error,
       );
       return false;
     }
 
-    messenger.showSnackBar(
-      SnackBar(content: Text(l10n.medicationDeletedMessage)),
+    AppNotification.showWithMessenger(
+      messenger,
+      context: context,
+      message: l10n.medicationDeletedMessage,
+      tone: AppNotificationTone.success,
     );
     return true;
   }

@@ -10,6 +10,7 @@ import 'package:my_pills/app/router.dart';
 import 'package:my_pills/core/db/app_database.dart';
 import 'package:my_pills/core/result/result.dart';
 import 'package:my_pills/core/theme/serene_theme.dart';
+import 'package:my_pills/core/widgets/app_notification.dart';
 import 'package:my_pills/core/widgets/gradient_primary_button.dart';
 import 'package:my_pills/core/widgets/sanctuary_app_bar.dart';
 import 'package:my_pills/core/widgets/selection_card.dart';
@@ -606,9 +607,10 @@ class _DailySchedulerScreenState extends ConsumerState<DailySchedulerScreen> {
   Future<void> _save(List<Medication> medications) async {
     final l10n = AppLocalizations.of(context);
     if (_medicationId == null) {
-      ScaffoldMessenger.of(
+      AppNotification.showWarning(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.noMedicationsForSchedule)));
+        l10n.noMedicationsForSchedule,
+      );
       return;
     }
 
@@ -671,9 +673,10 @@ class _DailySchedulerScreenState extends ConsumerState<DailySchedulerScreen> {
     final result = await createScheduleUseCase.call(schedule);
     if (!mounted) return;
     if (result case FailureResult()) {
-      ScaffoldMessenger.of(
+      AppNotification.showError(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.errorUnexpected)));
+        l10n.errorUnexpected,
+      );
       return;
     }
 
@@ -706,23 +709,21 @@ class _DailySchedulerScreenState extends ConsumerState<DailySchedulerScreen> {
       );
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          _notifyCalendar && !hasConnectedCalendar
-              ? 'Horario guardado. Recuerda vincular tu calendario en Configuración.'
-              : (_notifyCalendar
-                    ? 'Horario guardado y sincronizado con tu calendario.'
-                    : 'Horario guardado correctamente.'),
-        ),
-        action: (_notifyCalendar && !hasConnectedCalendar)
-            ? SnackBarAction(
-                label: 'Conectar',
-                onPressed: () => context.push(AppRoutes.settings),
-              )
-            : null,
-      ),
-    );
+    if (_notifyCalendar && !hasConnectedCalendar) {
+      AppNotification.showWarning(
+        context,
+        'Horario guardado. Recuerda vincular tu calendario en Configuración.',
+        actionLabel: 'Conectar',
+        onAction: () => context.push(AppRoutes.settings),
+      );
+    } else {
+      AppNotification.showSuccess(
+        context,
+        _notifyCalendar
+            ? 'Horario guardado y sincronizado con tu calendario.'
+            : 'Horario guardado correctamente.',
+      );
+    }
 
     context.go(AppRoutes.today);
   }

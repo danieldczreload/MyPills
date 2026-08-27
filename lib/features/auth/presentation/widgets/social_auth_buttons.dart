@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_pills/core/auth/app_google_sign_in.dart';
 import 'package:my_pills/core/result/result.dart';
 import 'package:my_pills/core/theme/serene_theme.dart';
+import 'package:my_pills/core/widgets/app_notification.dart';
 import 'package:my_pills/features/auth/domain/entities/auth_user.dart';
 import 'package:my_pills/features/auth/presentation/providers/auth_providers.dart';
 import 'package:my_pills/l10n/app_localizations.dart';
@@ -53,11 +54,9 @@ class _SocialAuthButtonsState extends ConsumerState<SocialAuthButtons> {
         // (and/or the app SHA-1 is not registered there).
         if (!mounted) return;
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.loginErrorGoogle('idToken is null')),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
+        AppNotification.showError(
+          context,
+          l10n.loginErrorGoogle('idToken is null'),
         );
         return;
       }
@@ -78,22 +77,18 @@ class _SocialAuthButtonsState extends ConsumerState<SocialAuthButtons> {
           widget.onSuccess(value);
         case FailureResult(:final failure):
           widget.onError?.call(failure.toString());
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(l10n.loginErrorGoogle(failure.toString())),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
+          AppNotification.showError(
+            context,
+            l10n.loginErrorGoogle(failure.toString()),
           );
       }
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
       widget.onError?.call(e.toString());
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.loginErrorGoogle(e.toString())),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
+      AppNotification.showError(
+        context,
+        l10n.loginErrorGoogle(e.toString()),
       );
     }
   }
@@ -112,14 +107,10 @@ class _SocialAuthButtonsState extends ConsumerState<SocialAuthButtons> {
       if (!launched) {
         if (!mounted) return;
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              l10n.loginErrorMicrosoft(
-                'No se pudo abrir el navegador para Microsoft',
-              ),
-            ),
-            backgroundColor: Theme.of(context).colorScheme.error,
+        AppNotification.showError(
+          context,
+          l10n.loginErrorMicrosoft(
+            'No se pudo abrir el navegador para Microsoft',
           ),
         );
         return;
@@ -130,11 +121,9 @@ class _SocialAuthButtonsState extends ConsumerState<SocialAuthButtons> {
       if (!mounted) return;
       setState(() => _isLoading = false);
       widget.onError?.call(e.toString());
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.loginErrorMicrosoft(e.toString())),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
+      AppNotification.showError(
+        context,
+        l10n.loginErrorMicrosoft(e.toString()),
       );
     }
   }

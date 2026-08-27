@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:my_pills/app/providers.dart';
 import 'package:my_pills/core/result/result.dart';
 import 'package:my_pills/core/theme/serene_theme.dart';
+import 'package:my_pills/core/widgets/app_notification.dart';
 import 'package:my_pills/core/widgets/sanctuary_app_bar.dart';
 import 'package:my_pills/features/medications/domain/entities/medication.dart';
 import 'package:my_pills/features/medications/presentation/providers/medications_providers.dart';
@@ -562,8 +563,9 @@ class _DoseRow extends ConsumerWidget {
     final result = await ref.read(markDoseTakenUseCaseProvider).call(id);
     if (!context.mounted) return;
     if (result case FailureResult()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context).errorUnexpected)),
+      AppNotification.showError(
+        context,
+        AppLocalizations.of(context).errorUnexpected,
       );
       return;
     }
@@ -766,17 +768,15 @@ class _DoseRow extends ConsumerWidget {
     final result = await ref.read(deleteDoseEventUseCaseProvider).call(id);
     if (!context.mounted) return;
     if (result case FailureResult()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context).errorUnexpected)),
+      AppNotification.showError(
+        context,
+        AppLocalizations.of(context).errorUnexpected,
       );
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          AppLocalizations.of(context).singleAlertCancelledMessage,
-        ),
-      ),
+    AppNotification.showSuccess(
+      context,
+      AppLocalizations.of(context).singleAlertCancelledMessage,
     );
     ref
       ..invalidate(streakProvider)
@@ -795,17 +795,15 @@ class _DoseRow extends ConsumerWidget {
         );
     if (!context.mounted) return;
     if (result case FailureResult()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context).errorUnexpected)),
+      AppNotification.showError(
+        context,
+        AppLocalizations.of(context).errorUnexpected,
       );
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          AppLocalizations.of(context).recurringAlertsCancelledMessage,
-        ),
-      ),
+    AppNotification.showSuccess(
+      context,
+      AppLocalizations.of(context).recurringAlertsCancelledMessage,
     );
     ref
       ..invalidate(streakProvider)

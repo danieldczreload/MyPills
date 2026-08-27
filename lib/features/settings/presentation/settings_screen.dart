@@ -9,6 +9,7 @@ import 'package:my_pills/core/errors/failure.dart';
 import 'package:my_pills/core/result/result.dart';
 import 'package:my_pills/core/theme/serene_theme.dart';
 import 'package:my_pills/core/widgets/app_avatar.dart';
+import 'package:my_pills/core/widgets/app_notification.dart';
 import 'package:my_pills/core/widgets/sanctuary_app_bar.dart';
 import 'package:my_pills/features/auth/presentation/providers/auth_providers.dart';
 import 'package:my_pills/features/notifications/presentation/providers/notification_providers.dart';
@@ -224,10 +225,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                     '¡Tus recordatorios de MyPills están funcionando correctamente!',
                               );
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Notificación de prueba enviada'),
-                              ),
+                            AppNotification.showSuccess(
+                              context,
+                              'Notificación de prueba enviada',
                             );
                           }
                         },
@@ -246,12 +246,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                     'Es hora de tomar tu medicamento (prueba).',
                               );
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Alarma programada en 10 segundos. Puedes bloquear la pantalla para probar.',
-                                ),
-                              ),
+                            AppNotification.showSuccess(
+                              context,
+                              'Alarma programada en 10 segundos. '
+                              'Puedes bloquear la pantalla para probar.',
                             );
                           }
                         },
@@ -415,8 +413,9 @@ class _CloudCalendarCardState extends ConsumerState<_CloudCalendarCard> {
   Future<void> _connectGoogle() async {
     final profile = ref.read(currentUserProfileProvider);
     if (profile == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No hay un perfil activo seleccionado')),
+      AppNotification.showWarning(
+        context,
+        'No hay un perfil activo seleccionado',
       );
       return;
     }
@@ -441,12 +440,9 @@ class _CloudCalendarCardState extends ConsumerState<_CloudCalendarCard> {
       if (!mounted) return;
       if (!granted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Se necesita permiso de Google Calendar para sincronizar.',
-            ),
-          ),
+        AppNotification.showWarning(
+          context,
+          'Se necesita permiso de Google Calendar para sincronizar.',
         );
         return;
       }
@@ -462,12 +458,9 @@ class _CloudCalendarCardState extends ConsumerState<_CloudCalendarCard> {
       final serverAuthCode = fresh?.serverAuthCode;
       if (fresh == null || serverAuthCode == null || serverAuthCode.isEmpty) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'No se obtuvo autorización de Google. Intenta de nuevo.',
-            ),
-          ),
+        AppNotification.showError(
+          context,
+          'No se obtuvo autorización de Google. Intenta de nuevo.',
         );
         return;
       }
@@ -487,10 +480,9 @@ class _CloudCalendarCardState extends ConsumerState<_CloudCalendarCard> {
         };
       } else {
         await _fetchConnections();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Google Calendar conectado'),
-          ),
+        AppNotification.showSuccess(
+          context,
+          'Google Calendar conectado',
         );
       }
     } catch (e) {
@@ -500,17 +492,16 @@ class _CloudCalendarCardState extends ConsumerState<_CloudCalendarCard> {
     }
 
     if (message != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      AppNotification.showError(context, message);
     }
   }
 
   Future<void> _connectViaBrowser(String provider) async {
     final profile = ref.read(currentUserProfileProvider);
     if (profile == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No hay un perfil activo seleccionado')),
+      AppNotification.showWarning(
+        context,
+        'No hay un perfil activo seleccionado',
       );
       return;
     }
@@ -535,15 +526,17 @@ class _CloudCalendarCardState extends ConsumerState<_CloudCalendarCard> {
           }
         } catch (e) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('No se pudo abrir el navegador: $e')),
+            AppNotification.showError(
+              context,
+              'No se pudo abrir el navegador: $e',
             );
           }
         }
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('URL de autorización inválida')),
+          AppNotification.showError(
+            context,
+            'URL de autorización inválida',
           );
         }
       }
@@ -553,8 +546,9 @@ class _CloudCalendarCardState extends ConsumerState<_CloudCalendarCard> {
         _ => 'Fallo al autorizar',
       };
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al conectar: $msg')),
+        AppNotification.showError(
+          context,
+          'Error al conectar: $msg',
         );
       }
     }
@@ -598,14 +592,11 @@ class _CloudCalendarCardState extends ConsumerState<_CloudCalendarCard> {
         message =
             'Sincronización exitosa: $created creados, $updated actualizados';
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      AppNotification.showInfo(context, message);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No se pudo sincronizar el calendario en la nube'),
-        ),
+      AppNotification.showError(
+        context,
+        'No se pudo sincronizar el calendario en la nube',
       );
     }
   }
@@ -782,10 +773,9 @@ class _CloudAccountCard extends ConsumerWidget {
                             await syncEngine.syncProfile(profileId);
                           }
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(l10n.settingsCloudSyncSuccess),
-                              ),
+                            AppNotification.showSuccess(
+                              context,
+                              l10n.settingsCloudSyncSuccess,
                             );
                           }
                         },
@@ -805,10 +795,9 @@ class _CloudAccountCard extends ConsumerWidget {
                         ref.invalidate(currentUserProfileProvider);
                         ref.invalidate(allProfilesProvider);
                         if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(l10n.settingsCloudSyncLoggedOut),
-                            ),
+                          AppNotification.showInfo(
+                            context,
+                            l10n.settingsCloudSyncLoggedOut,
                           );
                           context.go(AppRoutes.login);
                         }

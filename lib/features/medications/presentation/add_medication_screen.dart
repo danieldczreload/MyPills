@@ -7,6 +7,7 @@ import 'package:my_pills/app/providers.dart';
 import 'package:my_pills/app/router.dart';
 import 'package:my_pills/core/result/result.dart';
 import 'package:my_pills/core/theme/serene_theme.dart';
+import 'package:my_pills/core/widgets/app_notification.dart';
 import 'package:my_pills/core/widgets/gradient_primary_button.dart';
 import 'package:my_pills/core/widgets/sanctuary_app_bar.dart';
 import 'package:my_pills/core/widgets/soft_dropdown_field.dart';
@@ -452,9 +453,7 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
     setState(() => _isSaving = false);
 
     if (result case FailureResult()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.errorUnexpected)),
-      );
+      AppNotification.showError(context, l10n.errorUnexpected);
       return;
     }
 
@@ -497,9 +496,7 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
     setState(() => _isSaving = false);
 
     if (result case FailureResult()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.errorUnexpected)),
-      );
+      AppNotification.showError(context, l10n.errorUnexpected);
       return;
     }
 
@@ -545,14 +542,20 @@ class _AddMedicationScreenState extends ConsumerState<AddMedicationScreen> {
     setState(() => _isSaving = false);
 
     if (result case FailureResult()) {
-      messenger.showSnackBar(
-        SnackBar(content: Text(l10n.errorUnexpected)),
+      AppNotification.showWithMessenger(
+        messenger,
+        context: context,
+        message: l10n.errorUnexpected,
+        tone: AppNotificationTone.error,
       );
       return;
     }
 
-    messenger.showSnackBar(
-      SnackBar(content: Text(l10n.medicationDeletedMessage)),
+    AppNotification.showWithMessenger(
+      messenger,
+      context: context,
+      message: l10n.medicationDeletedMessage,
+      tone: AppNotificationTone.success,
     );
     navigator.pop();
   }

@@ -8,6 +8,7 @@ import 'package:my_pills/app/providers.dart';
 import 'package:my_pills/app/router.dart';
 import 'package:my_pills/core/result/result.dart';
 import 'package:my_pills/core/theme/serene_theme.dart';
+import 'package:my_pills/core/widgets/app_notification.dart';
 import 'package:my_pills/features/schedules/domain/entities/schedule.dart';
 import 'package:my_pills/l10n/app_localizations.dart';
 
@@ -180,13 +181,15 @@ class MedicationSchedulesSheet extends ConsumerWidget {
         );
     if (!context.mounted) return;
     if (result case FailureResult()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.errorUnexpected)),
+      AppNotification.showError(
+        context,
+        l10n.errorUnexpected,
       );
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.recurringAlertsCancelledMessage)),
+    AppNotification.showSuccess(
+      context,
+      l10n.recurringAlertsCancelledMessage,
     );
   }
 
@@ -222,13 +225,15 @@ class MedicationSchedulesSheet extends ConsumerWidget {
         .call(schedule.id);
     if (!context.mounted) return;
     if (result case FailureResult()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.errorUnexpected)),
+      AppNotification.showError(
+        context,
+        l10n.errorUnexpected,
       );
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.scheduleDeletedMessage)),
+    AppNotification.showSuccess(
+      context,
+      l10n.scheduleDeletedMessage,
     );
   }
 }

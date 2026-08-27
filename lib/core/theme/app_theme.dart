@@ -54,6 +54,23 @@ abstract final class AppTheme {
         radius: const Radius.circular(8),
         interactive: true,
       ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.surfaceContainerLowest,
+        contentTextStyle: textTheme.bodyMedium?.copyWith(
+          color: AppColors.onSurface,
+          fontWeight: FontWeight.w500,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: SereneTheme.standard().radius.lg,
+          side: BorderSide(
+            color: AppColors.outlineVariant.withValues(alpha: 0.15),
+          ),
+        ),
+        elevation: 4,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        actionTextColor: AppColors.primary,
+      ),
       extensions: [SereneTheme.standard()],
     );
   }

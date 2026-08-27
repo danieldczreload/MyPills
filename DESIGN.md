@@ -115,6 +115,13 @@ Shadow values → `SereneTheme.standard()` in `serene_theme.dart`.
 - Missed → amber soft-fill (never red).
 - System error → `errorContainer` soft-fill; reserved for actual system errors (e.g., "sync failed"), not medication states.
 
+### Floating in-app notifications (Toasts)
+
+- Floating container suspended `lg` (16) from the bottom edge, horizontal margin `lg` (16).
+- Surface: `surfaceContainerLowest`, Radius `lg` (24), ghost border (`outlineVariant` @ 15%), ambient shadow.
+- Never use default fixed full-width dark SnackBars.
+- Paired semantic icon badge (Sage green for success, Amber for pending/warning, Red for system errors, Indigo for info).
+
 ---
 
 ## 7. Motion & Interaction

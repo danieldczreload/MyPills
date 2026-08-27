@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:my_pills/app/providers.dart';
 import 'package:my_pills/app/router.dart';
 import 'package:my_pills/core/theme/serene_theme.dart';
+import 'package:my_pills/core/widgets/app_notification.dart';
 import 'package:my_pills/features/profile/presentation/providers/profile_providers.dart';
 
 /// Serene Selector for choosing reminder delivery methods per schedule (Push and/or Calendar).
@@ -194,17 +195,11 @@ class NotificationTypeSelector extends ConsumerWidget {
                       onChanged: (val) {
                         onCalendarChanged(val);
                         if (val && !hasConnectedCalendar) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: const Text(
-                                'Aviso: No tienes ningún calendario conectado aún.',
-                              ),
-                              action: SnackBarAction(
-                                label: 'Conectar',
-                                onPressed: () =>
-                                    context.push(AppRoutes.settings),
-                              ),
-                            ),
+                          AppNotification.showWarning(
+                            context,
+                            'Aviso: No tienes ningún calendario conectado aún.',
+                            actionLabel: 'Conectar',
+                            onAction: () => context.push(AppRoutes.settings),
                           );
                         }
                       },
