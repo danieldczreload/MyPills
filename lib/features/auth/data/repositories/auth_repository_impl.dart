@@ -3,6 +3,8 @@ import 'package:my_pills/core/errors/failure.dart';
 import 'package:my_pills/core/network/api_client.dart';
 import 'package:my_pills/core/result/result.dart';
 import 'package:my_pills/core/storage/token_storage.dart';
+import 'package:my_pills/core/utils/log.dart';
+import 'package:my_pills/features/auth/data/id_token_claims.dart';
 import 'package:my_pills/features/auth/domain/entities/auth_user.dart';
 import 'package:my_pills/features/auth/domain/repositories/auth_repository.dart';
 
@@ -48,8 +50,18 @@ class AuthRepositoryImpl implements AuthRepository {
     String? displayName,
     String? photoUrl,
   ) async {
-    _lastDisplayName = displayName;
-    _lastPhotoUrl = photoUrl;
+    final claims = IdTokenClaims.tryParse(idToken);
+    _lastDisplayName = _firstNonEmpty(displayName, claims?.name);
+    _lastPhotoUrl = _firstNonEmpty(photoUrl, claims?.picture);
+    mlog(
+      'mypills.auth',
+      'login $path displayName=${_lastDisplayName ?? 'null'} '
+          'photoUrl=${_lastPhotoUrl ?? 'null'}',
+    );
+    await _tokenStorage.saveAuthProfile(
+      displayName: _lastDisplayName,
+      photoUrl: _lastPhotoUrl,
+    );
     try {
       final response = await _apiClient.dio.post<Map<String, dynamic>>(
         path,
@@ -119,17 +131,20 @@ class AuthRepositoryImpl implements AuthRepository {
       final response = await _apiClient.dio.get<Map<String, dynamic>>('/me');
       if (response.statusCode == 200 && response.data != null) {
         final data = Map<String, dynamic>.from(response.data!);
+        final cachedName =
+            _lastDisplayName ?? await _tokenStorage.getDisplayName();
+        final cachedPhoto = _lastPhotoUrl ?? await _tokenStorage.getPhotoUrl();
         if (data['name']?.toString().isEmpty ?? true) {
-          if (_lastDisplayName != null && _lastDisplayName!.isNotEmpty) {
-            data['name'] = _lastDisplayName;
+          if (cachedName != null && cachedName.isNotEmpty) {
+            data['name'] = cachedName;
           } else {
             final email = data['email']?.toString() ?? '';
             data['name'] = email.contains('@') ? email.split('@').first : email;
           }
         }
-        if (!data.containsKey('photoUrl') || data['photoUrl'] == null) {
-          if (_lastPhotoUrl != null && _lastPhotoUrl!.isNotEmpty) {
-            data['photoUrl'] = _lastPhotoUrl;
+        if (data['photoUrl'] == null || data['photoUrl'].toString().isEmpty) {
+          if (cachedPhoto != null && cachedPhoto.isNotEmpty) {
+            data['photoUrl'] = cachedPhoto;
           }
         }
         return Result.success(AuthUser.fromJson(data));
@@ -169,5 +184,11 @@ class AuthRepositoryImpl implements AuthRepository {
     }
 
     return Failure.unexpected(error: e, stackTrace: e.stackTrace);
+  }
+
+  static String? _firstNonEmpty(String? a, String? b) {
+    if (a != null && a.isNotEmpty) return a;
+    if (b != null && b.isNotEmpty) return b;
+    return null;
   }
 }

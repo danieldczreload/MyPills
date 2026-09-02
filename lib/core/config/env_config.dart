@@ -1,12 +1,28 @@
 /// Environment and runtime configuration constants.
 abstract final class EnvConfig {
+  /// Deployed production API. This is the compile-time default so release
+  /// builds (`flutter build apk/appbundle/ios`) never hit localhost unless
+  /// an explicit `--dart-define=API_BASE_URL=...` is passed.
+  static const String productionApiBaseUrl =
+      'https://mypills-api.danieldelcid.com/api/v1';
+
+  /// Local HTTPS API used only in development launches.
+  /// Desktop: `https://localhost/api/v1` (Caddy on :443).
+  /// Android emulator: `https://localhost:8443/api/v1` plus
+  /// `adb reverse tcp:8443 tcp:443` (privileged :443 cannot be reversed).
+  static const String localApiBaseUrl = 'https://localhost/api/v1';
+
+  /// Emulator-side URL. Requires `adb reverse tcp:8443 tcp:443` so SNI stays
+  /// `localhost` (Caddy rejects TLS when the host is `10.0.2.2`).
+  static const String androidEmulatorApiBaseUrl =
+      'https://localhost:8443/api/v1';
+
   /// Base URL for the MyPills backend API.
-  /// Defaults to the deployed production backend.
-  /// Can be overridden at compile time via:
-  /// `--dart-define=API_BASE_URL=https://...`
+  /// Override at compile time via:
+  /// `--dart-define=API_BASE_URL=https://localhost/api/v1`
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://mypills-api.danieldelcid.com/api/v1',
+    defaultValue: productionApiBaseUrl,
   );
 
   /// Google OAuth 2.0 Android Client ID (PKCE public, no secret) used for

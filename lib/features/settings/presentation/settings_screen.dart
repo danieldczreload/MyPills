@@ -289,11 +289,10 @@ class _SettingsSectionCard extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final sereneTheme = theme.extension<SereneTheme>()!;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
-        borderRadius: sereneTheme.radius.lg,
-      ),
+    return Material(
+      color: colorScheme.surfaceContainerLow,
+      borderRadius: sereneTheme.radius.lg,
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: children,
@@ -644,77 +643,82 @@ class _CloudCalendarCardState extends ConsumerState<_CloudCalendarCard> {
     final googleConnected = _isConnected('google');
     final microsoftConnected = _isConnected('microsoft');
 
-    return Container(
-      padding: EdgeInsets.all(serene.spacing.md),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: serene.radius.lg,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Sincroniza tus dosis automáticamente con tu cuenta de Google Calendar o Microsoft Outlook.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          SizedBox(height: serene.spacing.md),
-          // Google Calendar
-          ListTile(
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.event, color: Colors.blue),
-            title: const Text(
-              'Google Calendar',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text(googleConnected ? 'Conectado' : 'No conectado'),
-            trailing: googleConnected
-                ? OutlinedButton(
-                    onPressed: _isLoading ? null : () => _disconnect('google'),
-                    child: const Text('Desconectar'),
-                  )
-                : FilledButton.tonal(
-                    onPressed: _isLoading ? null : () => _connect('google'),
-                    child: const Text('Conectar'),
-                  ),
-          ),
-          const Divider(height: 1),
-          // Microsoft Outlook
-          ListTile(
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.calendar_today, color: Colors.indigo),
-            title: const Text(
-              'Microsoft Outlook',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text(microsoftConnected ? 'Conectado' : 'No conectado'),
-            trailing: microsoftConnected
-                ? OutlinedButton(
-                    onPressed: _isLoading
-                        ? null
-                        : () => _disconnect('microsoft'),
-                    child: const Text('Desconectar'),
-                  )
-                : FilledButton.tonal(
-                    onPressed: _isLoading ? null : () => _connect('microsoft'),
-                    child: const Text('Conectar'),
-                  ),
-          ),
-          if (googleConnected || microsoftConnected) ...[
-            SizedBox(height: serene.spacing.md),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: _isLoading ? null : _syncNow,
-                icon: const Icon(Icons.sync_rounded, size: 18),
-                label: const Text('Sincronizar eventos ahora'),
+    return Material(
+      color: theme.colorScheme.surfaceContainerLow,
+      borderRadius: serene.radius.lg,
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: EdgeInsets.all(serene.spacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Sincroniza tus dosis automáticamente con tu cuenta de Google Calendar o Microsoft Outlook.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
+            SizedBox(height: serene.spacing.md),
+            // Google Calendar
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.event, color: Colors.blue),
+              title: const Text(
+                'Google Calendar',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: Text(googleConnected ? 'Conectado' : 'No conectado'),
+              trailing: googleConnected
+                  ? OutlinedButton(
+                      onPressed: _isLoading
+                          ? null
+                          : () => _disconnect('google'),
+                      child: const Text('Desconectar'),
+                    )
+                  : FilledButton.tonal(
+                      onPressed: _isLoading ? null : () => _connect('google'),
+                      child: const Text('Conectar'),
+                    ),
+            ),
+            const Divider(height: 1),
+            // Microsoft Outlook
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.calendar_today, color: Colors.indigo),
+              title: const Text(
+                'Microsoft Outlook',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: Text(microsoftConnected ? 'Conectado' : 'No conectado'),
+              trailing: microsoftConnected
+                  ? OutlinedButton(
+                      onPressed: _isLoading
+                          ? null
+                          : () => _disconnect('microsoft'),
+                      child: const Text('Desconectar'),
+                    )
+                  : FilledButton.tonal(
+                      onPressed: _isLoading
+                          ? null
+                          : () => _connect('microsoft'),
+                      child: const Text('Conectar'),
+                    ),
+            ),
+            if (googleConnected || microsoftConnected) ...[
+              SizedBox(height: serene.spacing.md),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: _isLoading ? null : _syncNow,
+                  icon: const Icon(Icons.sync_rounded, size: 18),
+                  label: const Text('Sincronizar eventos ahora'),
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -747,10 +751,12 @@ class _CloudAccountCard extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    Icon(
-                      Icons.cloud_done_rounded,
-                      color: colorScheme.secondary,
-                      size: 24,
+                    AppAvatar(
+                      photoPath: user.photoUrl,
+                      radius: 22,
+                      fallbackIcon: Icons.cloud_done_rounded,
+                      backgroundColor: colorScheme.secondaryContainer,
+                      foregroundColor: colorScheme.secondary,
                     ),
                     SizedBox(width: serene.spacing.sm),
                     Expanded(
@@ -758,7 +764,7 @@ class _CloudAccountCard extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            l10n.settingsCloudSyncSection,
+                            user.name ?? l10n.settingsCloudSyncSection,
                             style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),

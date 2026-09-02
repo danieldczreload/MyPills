@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:my_pills/app/providers.dart';
 import 'package:my_pills/app/router.dart';
+import 'package:my_pills/core/config/env_config.dart';
 import 'package:my_pills/core/theme/app_theme.dart';
 import 'package:my_pills/core/utils/log.dart';
 import 'package:my_pills/features/notifications/data/services/device_info.dart';
@@ -77,6 +78,7 @@ Future<void> _setUpTimezone() async {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  mlog('mypills.boot', 'API_BASE_URL=${EnvConfig.apiBaseUrl}');
 
   // Non-fatal crash isolation: initialize Firebase Core & Messaging safely
   try {

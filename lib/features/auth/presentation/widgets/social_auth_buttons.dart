@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_pills/core/auth/app_google_sign_in.dart';
 import 'package:my_pills/core/result/result.dart';
 import 'package:my_pills/core/theme/serene_theme.dart';
+import 'package:my_pills/core/utils/log.dart';
 import 'package:my_pills/core/widgets/app_notification.dart';
+import 'package:my_pills/features/auth/data/id_token_claims.dart';
 import 'package:my_pills/features/auth/domain/entities/auth_user.dart';
 import 'package:my_pills/features/auth/presentation/providers/auth_providers.dart';
 import 'package:my_pills/l10n/app_localizations.dart';
@@ -61,12 +63,20 @@ class _SocialAuthButtonsState extends ConsumerState<SocialAuthButtons> {
         return;
       }
 
+      final claims = IdTokenClaims.tryParse(token);
+      mlog(
+        'mypills.auth',
+        'Google account email=${account.email} '
+            'displayName=${account.displayName} photoUrl=${account.photoUrl} '
+            'jwtName=${claims?.name} jwtPicture=${claims?.picture}',
+      );
+
       final result = await ref
           .read(authProvider.notifier)
           .loginWithGoogle(
             token,
-            displayName: account.displayName,
-            photoUrl: account.photoUrl,
+            displayName: account.displayName ?? claims?.name,
+            photoUrl: account.photoUrl ?? claims?.picture,
           );
 
       if (!mounted) return;

@@ -112,7 +112,7 @@ class FcmDeviceService {
         data: {
           'fcmToken': fcmToken,
           'platform': platform,
-          if (locale != null) 'locale': locale,
+          'locale': _resolveLocale(locale),
         },
       );
 
@@ -234,5 +234,21 @@ class FcmDeviceService {
   void dispose() {
     _tokenRefreshSub?.cancel();
     _foregroundMessageSub?.cancel();
+  }
+
+  /// API requires `^[a-z]{2}(?:-[A-Z]{2})?$` (e.g. `es` or `es-MX`).
+  static String _resolveLocale(String? locale) {
+    final raw = (locale == null || locale.isEmpty)
+        ? (kIsWeb ? 'es' : Platform.localeName)
+        : locale;
+    final normalized = raw.replaceAll('_', '-');
+    final match = RegExp(
+      r'^([A-Za-z]{2})(?:-([A-Za-z]{2}))?',
+    ).firstMatch(normalized);
+    if (match == null) return 'es';
+    final lang = match.group(1)!.toLowerCase();
+    final region = match.group(2);
+    if (region == null || region.isEmpty) return lang;
+    return '$lang-${region.toUpperCase()}';
   }
 }

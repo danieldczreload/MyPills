@@ -4,6 +4,7 @@ import 'package:my_pills/app/providers.dart';
 import 'package:my_pills/core/result/result.dart';
 import 'package:my_pills/features/auth/data/services/microsoft_auth_service.dart';
 import 'package:my_pills/features/auth/domain/entities/auth_user.dart';
+import 'package:my_pills/features/profile/presentation/providers/profile_providers.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'auth_providers.g.dart';
@@ -40,6 +41,7 @@ class AuthNotifier extends _$AuthNotifier {
     );
     if (result case Success(:final value)) {
       state = AsyncValue.data(value);
+      await _rememberGoogleClaims(value);
       _postLoginSync();
     } else {
       state = const AsyncValue.data(null);
@@ -62,6 +64,7 @@ class AuthNotifier extends _$AuthNotifier {
     );
     if (result case Success(:final value)) {
       state = AsyncValue.data(value);
+      await _rememberGoogleClaims(value);
       _postLoginSync();
     } else {
       state = const AsyncValue.data(null);
@@ -87,15 +90,7 @@ class AuthNotifier extends _$AuthNotifier {
   }
 
   void _postLoginSync() {
-    final syncEngine = ref.read(syncEngineProvider);
-    unawaited(syncEngine.flushOutbox());
-    final prefs = ref.read(sharedPreferencesProvider);
-    final profileId = prefs.getString('active_profile_id');
-    if (profileId != null && profileId.isNotEmpty && profileId != 'default') {
-      unawaited(syncEngine.syncProfile(profileId));
-    } else {
-      unawaited(syncEngine.fetchAndRestoreProfiles());
-    }
+    unawaited(_syncThenSeed());
   }
 
   /// Completes Microsoft PKCE authorization from deep link callback.
@@ -108,11 +103,73 @@ class AuthNotifier extends _$AuthNotifier {
     final result = await msService.completeLogin(code: code, state: oauthState);
     if (result case Success(:final value)) {
       state = AsyncValue.data(value);
+      await _rememberGoogleClaims(value);
       _postLoginSync();
     } else {
       state = const AsyncValue.data(null);
     }
     return result;
+  }
+
+  /// Store Google name/photo in profile prefs *before* the post-login
+  /// sync, so a first-time local API (empty `/profiles`) creates the
+  /// patient with those claims instead of "Usuario" and no photo.
+  Future<void> _rememberGoogleClaims(AuthUser user) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    final name = user.name?.trim();
+    if (name != null && name.isNotEmpty) {
+      final existing = prefs.getString('profile.name');
+      if (existing == null || existing.isEmpty || existing == 'Usuario') {
+        await prefs.setString('profile.name', name);
+      }
+    }
+    final photo = user.photoUrl;
+    if (photo != null && photo.isNotEmpty) {
+      final existingPhoto = prefs.getString('profile.photo_path');
+      if (existingPhoto == null || existingPhoto.isEmpty) {
+        await prefs.setString('profile.photo_path', photo);
+      }
+    }
+  }
+
+  Future<void> _syncThenSeed() async {
+    final syncEngine = ref.read(syncEngineProvider);
+    await syncEngine.flushOutbox();
+    if (!ref.mounted) return;
+    final prefs = ref.read(sharedPreferencesProvider);
+    final profileId = prefs.getString('active_profile_id');
+    if (profileId != null && profileId.isNotEmpty && profileId != 'default') {
+      await syncEngine.syncProfile(profileId);
+    } else {
+      await syncEngine.fetchAndRestoreProfiles();
+    }
+    if (!ref.mounted) return;
+    ref
+      ..invalidate(currentUserProfileProvider)
+      ..invalidate(allProfilesProvider);
+    final user = state.asData?.value;
+    if (user == null) return;
+    final profile = ref.read(currentUserProfileProvider);
+    if (profile == null) return;
+    final photo = user.photoUrl;
+    final name = user.name?.trim();
+    final needsPhoto =
+        (profile.photoPath == null || profile.photoPath!.isEmpty) &&
+        photo != null &&
+        photo.isNotEmpty;
+    final needsName =
+        (profile.name.isEmpty || profile.name == 'Usuario') &&
+        name != null &&
+        name.isNotEmpty;
+    if (!needsPhoto && !needsName) return;
+    await ref
+        .read(currentUserProfileProvider.notifier)
+        .updateProfile(
+          profile.copyWith(
+            name: needsName ? name : profile.name,
+            photoPath: needsPhoto ? photo : profile.photoPath,
+          ),
+        );
   }
 }
 

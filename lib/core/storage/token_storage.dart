@@ -9,6 +9,8 @@ class TokenStorage {
 
   static const String _accessTokenKey = 'mypills_access_token';
   static const String _refreshTokenKey = 'mypills_refresh_token';
+  static const String _displayNameKey = 'mypills_auth_display_name';
+  static const String _photoUrlKey = 'mypills_auth_photo_url';
 
   String? _inMemoryAccessToken;
 
@@ -36,10 +38,33 @@ class TokenStorage {
     await _storage.write(key: _refreshTokenKey, value: refreshToken);
   }
 
-  /// Clears stored access token and refresh token.
+  /// Persists Google/Microsoft display claims. `/me` does not return them.
+  Future<void> saveAuthProfile({
+    String? displayName,
+    String? photoUrl,
+  }) async {
+    if (displayName != null && displayName.isNotEmpty) {
+      await _storage.write(key: _displayNameKey, value: displayName);
+    } else {
+      await _storage.delete(key: _displayNameKey);
+    }
+    if (photoUrl != null && photoUrl.isNotEmpty) {
+      await _storage.write(key: _photoUrlKey, value: photoUrl);
+    } else {
+      await _storage.delete(key: _photoUrlKey);
+    }
+  }
+
+  Future<String?> getDisplayName() => _storage.read(key: _displayNameKey);
+
+  Future<String?> getPhotoUrl() => _storage.read(key: _photoUrlKey);
+
+  /// Clears stored access token, refresh token, and display claims.
   Future<void> clearTokens() async {
     _inMemoryAccessToken = null;
     await _storage.delete(key: _accessTokenKey);
     await _storage.delete(key: _refreshTokenKey);
+    await _storage.delete(key: _displayNameKey);
+    await _storage.delete(key: _photoUrlKey);
   }
 }

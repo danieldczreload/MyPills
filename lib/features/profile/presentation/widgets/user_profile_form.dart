@@ -52,17 +52,20 @@ class _UserProfileFormState extends State<UserProfileForm> {
   @override
   void didUpdateWidget(covariant UserProfileForm oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.initialProfile != null && oldWidget.initialProfile == null) {
-      if (_nameController.text.isEmpty &&
-          widget.initialProfile!.name.isNotEmpty) {
-        _nameController.text = widget.initialProfile!.name;
-      }
-      if (_photoPath == null && widget.initialProfile!.photoPath != null) {
-        setState(() {
-          _photoPath = widget.initialProfile!.photoPath;
-        });
-      }
+    final next = widget.initialProfile;
+    if (next == null) return;
+    var changed = false;
+    if (_nameController.text.isEmpty && next.name.isNotEmpty) {
+      _nameController.text = next.name;
+      changed = true;
     }
+    if ((_photoPath == null || _photoPath!.isEmpty) &&
+        next.photoPath != null &&
+        next.photoPath!.isNotEmpty) {
+      _photoPath = next.photoPath;
+      changed = true;
+    }
+    if (changed) setState(() {});
   }
 
   @override

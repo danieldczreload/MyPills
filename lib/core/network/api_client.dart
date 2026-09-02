@@ -5,6 +5,7 @@ import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:my_pills/core/config/env_config.dart';
 import 'package:my_pills/core/storage/token_storage.dart';
+import 'package:my_pills/core/utils/log.dart';
 
 /// Central API HTTP client powered by Dio with JWT auth interceptor and
 /// single-flight token refresh mutex.
@@ -29,16 +30,23 @@ class ApiClient {
                },
              ),
            ) {
-    if (!kIsWeb && _dio.httpClientAdapter is IOHttpClientAdapter) {
+    // Accept self-signed certs only in debug and only for loopback hosts so
+    // production/release never bypasses TLS validation.
+    if (kDebugMode &&
+        !kIsWeb &&
+        _dio.httpClientAdapter is IOHttpClientAdapter) {
       (_dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
-        final client = HttpClient();
-        client.badCertificateCallback = (cert, host, port) {
-          return host == 'localhost' ||
-              host == '127.0.0.1' ||
-              host == '10.0.2.2';
-        };
+        final client = HttpClient()
+          ..badCertificateCallback = (cert, host, port) {
+            return host == 'localhost' ||
+                host == '127.0.0.1' ||
+                host == '10.0.2.2';
+          };
         return client;
       };
+    }
+    if (kDebugMode) {
+      _dio.interceptors.add(_DebugHttpLogInterceptor());
     }
     _dio.interceptors.add(
       InterceptorsWrapper(
@@ -138,5 +146,48 @@ class ApiClient {
     } finally {
       _refreshCompleter = null;
     }
+  }
+}
+
+/// Compact request/response tracer used only in debug builds.
+/// Does not log headers or bodies so tokens never hit the console.
+class _DebugHttpLogInterceptor extends Interceptor {
+  static const _startedAtKey = 'devLogStartedAt';
+
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    options.extra[_startedAtKey] = DateTime.now();
+    mlog('mypills.http', '→ ${options.method} ${options.uri}');
+    handler.next(options);
+  }
+
+  @override
+  void onResponse(
+    Response<dynamic> response,
+    ResponseInterceptorHandler handler,
+  ) {
+    final started = response.requestOptions.extra[_startedAtKey];
+    final elapsed = started is DateTime
+        ? ' (${DateTime.now().difference(started).inMilliseconds}ms)'
+        : '';
+    mlog(
+      'mypills.http',
+      '← ${response.statusCode} ${response.requestOptions.method} '
+          '${response.requestOptions.uri}$elapsed',
+    );
+    handler.next(response);
+  }
+
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) {
+    final body = err.response?.data;
+    mlogError(
+      'mypills.http',
+      '${err.requestOptions.method} ${err.requestOptions.uri} '
+          'failed: ${err.type.name} status=${err.response?.statusCode}'
+          '${body != null ? ' body=$body' : ''}',
+      error: err.error,
+    );
+    handler.next(err);
   }
 }
