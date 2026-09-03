@@ -725,4 +725,25 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get medicationFallbackName => 'Medicamento';
+
+  @override
+  String get timePickerSheetTitle => 'Hora de la dosis';
+
+  @override
+  String get timePickerConfirm => 'Confirmar';
+
+  @override
+  String get timePickerCancel => 'Cancelar';
+
+  @override
+  String get timePickerHour => 'Hora';
+
+  @override
+  String get timePickerMinute => 'Minuto';
+
+  @override
+  String get timePickerPeriodAm => 'a. m.';
+
+  @override
+  String get timePickerPeriodPm => 'p. m.';
 }

@@ -1,9 +1,13 @@
+import 'dart:convert';
+
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:my_pills/core/db/app_database.dart';
 import 'package:my_pills/core/result/result.dart';
 import 'package:my_pills/core/sync/sync_engine.dart';
+import 'package:timezone/data/latest_all.dart' as tzdata;
+import 'package:timezone/timezone.dart' as tz;
 import 'package:my_pills/features/profile/data/repositories/synced_profile_repository.dart';
 import 'package:my_pills/features/profile/domain/entities/user_profile.dart';
 import 'package:my_pills/features/profile/domain/repositories/user_profile_repository.dart';
@@ -38,6 +42,7 @@ void main() {
     when(
       () => mockSyncEngine.flushOutbox(),
     ).thenAnswer((_) async => const Result.success(null));
+    when(() => mockLocalRepo.getProfileById(any())).thenReturn(null);
 
     repository = SyncedProfileRepository(
       localRepo: mockLocalRepo,
@@ -68,6 +73,8 @@ void main() {
     });
 
     test('saveProfile saves locally and enqueues outbox operation', () async {
+      tzdata.initializeTimeZones();
+      tz.setLocalLocation(tz.getLocation('America/Mexico_City'));
       when(() => mockLocalRepo.saveProfile(profile)).thenAnswer((_) async {});
 
       await repository.saveProfile(profile);
@@ -77,6 +84,10 @@ void main() {
       expect(outboxItems.length, equals(1));
       expect(outboxItems.first.entityType, equals('profile'));
       expect(outboxItems.first.action, equals('UPDATE'));
+      final payload =
+          jsonDecode(outboxItems.first.payloadJson) as Map<String, dynamic>;
+      expect(payload['timezone'], 'America/Mexico_City');
+      expect(payload['birthDate'], '1990-05-20');
       verify(() => mockSyncEngine.flushOutbox()).called(1);
     });
   });

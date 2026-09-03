@@ -6,6 +6,7 @@ import 'package:my_pills/core/errors/failure.dart';
 import 'package:my_pills/core/network/api_client.dart';
 import 'package:my_pills/core/network/http_error_body.dart';
 import 'package:my_pills/core/result/result.dart';
+import 'package:my_pills/core/utils/device_timezone.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PkceAuthorizeResult {
@@ -65,13 +66,14 @@ class PkceCalendarService {
         }
       } else {
         final name = _prefs?.getString('profile.name') ?? 'Usuario';
+        final timezone = DeviceTimezone.currentIanaId();
         final createRes = await _apiClient.dio.post<Map<String, dynamic>>(
           '/profiles',
           data: {
             'name': name,
             'birthDate': '1990-01-01',
             'gender': 'other',
-            'timezone': DateTime.now().timeZoneName,
+            'timezone': ?timezone,
           },
         );
         if (createRes.statusCode == 201 && createRes.data != null) {

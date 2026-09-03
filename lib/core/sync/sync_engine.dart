@@ -5,6 +5,8 @@ import 'package:my_pills/core/db/app_database.dart';
 import 'package:my_pills/core/errors/failure.dart';
 import 'package:my_pills/core/network/api_client.dart';
 import 'package:my_pills/core/result/result.dart';
+import 'package:my_pills/core/utils/calendar_date.dart';
+import 'package:my_pills/core/utils/device_timezone.dart';
 import 'package:my_pills/features/schedules/data/mappers/dose_mapper.dart';
 import 'package:my_pills/features/schedules/domain/entities/dose.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -173,15 +175,19 @@ class SyncEngine {
           final localGender = _prefs.getString('profile.gender') ?? 'other';
           final localBirthDateStr = _prefs.getString('profile.birth_date');
           final localPhoto = _prefs.getString('profile.photo_path');
+          final birthDate = localBirthDateStr != null
+              ? CalendarDate.toIso(
+                  DateTime.tryParse(localBirthDateStr) ?? DateTime(1990),
+                )
+              : '1990-01-01';
+          final timezone = DeviceTimezone.currentIanaId();
           final createRes = await _apiClient.dio.post<Map<String, dynamic>>(
             '/profiles',
             data: {
               'name': localName,
-              'birthDate': localBirthDateStr != null
-                  ? localBirthDateStr.split('T').first
-                  : '1990-01-01',
+              'birthDate': birthDate,
               'gender': localGender,
-              'timezone': DateTime.now().timeZoneName,
+              'timezone': ?timezone,
               if (localPhoto != null) 'photoUrl': localPhoto,
             },
           );

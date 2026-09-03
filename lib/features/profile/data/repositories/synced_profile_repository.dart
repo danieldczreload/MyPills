@@ -5,9 +5,10 @@ import 'package:my_pills/core/db/app_database.dart';
 import 'package:my_pills/core/network/media_upload_service.dart';
 import 'package:my_pills/core/result/result.dart';
 import 'package:my_pills/core/sync/sync_engine.dart';
+import 'package:my_pills/core/utils/calendar_date.dart';
+import 'package:my_pills/core/utils/device_timezone.dart';
 import 'package:my_pills/features/profile/domain/entities/user_profile.dart';
 import 'package:my_pills/features/profile/domain/repositories/user_profile_repository.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 class SyncedProfileRepository implements UserProfileRepository {
@@ -78,16 +79,13 @@ class SyncedProfileRepository implements UserProfileRepository {
         : (effectiveProfile.id == 'default' ? 'default' : effectiveProfile.id);
     final action = isUpdate ? 'UPDATE' : 'CREATE';
 
+    final timezone = DeviceTimezone.currentIanaId();
     final payload = <String, dynamic>{
       'name': effectiveProfile.name,
-      'birthDate': effectiveProfile.birthDate
-          .toUtc()
-          .toIso8601String()
-          .split('T')
-          .first,
+      'birthDate': CalendarDate.toIso(effectiveProfile.birthDate),
       'gender': effectiveProfile.gender,
-      'timezone': DateTime.now().timeZoneName,
-      if (photoUrl != null) 'photoUrl': photoUrl,
+      'timezone': ?timezone,
+      'photoUrl': ?photoUrl,
     };
 
     await _db

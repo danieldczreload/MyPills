@@ -6,6 +6,8 @@ import 'package:mocktail/mocktail.dart';
 import 'package:my_pills/core/db/app_database.dart';
 import 'package:my_pills/core/result/result.dart';
 import 'package:my_pills/core/sync/sync_engine.dart';
+import 'package:timezone/data/latest_all.dart' as tzdata;
+import 'package:timezone/timezone.dart' as tz;
 import 'package:my_pills/features/schedules/data/repositories/synced_schedules_repository.dart';
 import 'package:my_pills/features/schedules/domain/entities/dose.dart';
 import 'package:my_pills/features/schedules/domain/entities/schedule.dart';
@@ -87,6 +89,8 @@ void main() {
     });
 
     test('create inserts outbox operation and flushes outbox', () async {
+      tzdata.initializeTimeZones();
+      tz.setLocalLocation(tz.getLocation('America/Mexico_City'));
       when(
         () => mockLocalRepo.create(schedule),
       ).thenAnswer((_) async => Result.success(schedule));
@@ -95,15 +99,20 @@ void main() {
       expect(result.isSuccess, isTrue);
 
       final outboxItems = await db.select(db.outboxTable).get();
-      expect(outboxItems.length, equals(1));
-      expect(outboxItems.first.entityType, equals('schedule'));
-      expect(outboxItems.first.action, equals('CREATE'));
+      expect(outboxItems, hasLength(1));
+      expect(outboxItems.single.entityType, equals('schedule'));
+      expect(outboxItems.single.action, equals('CREATE'));
       final payload =
-          jsonDecode(outboxItems.first.payloadJson) as Map<String, dynamic>;
+          jsonDecode(outboxItems.single.payloadJson) as Map<String, dynamic>;
       expect(payload['doseAmount'], 5);
       expect(payload['doseUnit'], 'ml');
-      expect(payload['clientId'], outboxItems.first.clientId);
+      expect(payload['clientId'], outboxItems.single.clientId);
       expect(payload.containsKey('dosage'), isFalse);
+      expect(payload['timezone'], 'America/Mexico_City');
+      expect(payload['startDate'], '2026-01-01');
+      expect(payload['timesOfDay'], [
+        {'hour': 8, 'minute': 0},
+      ]);
       verify(() => mockSyncEngine.flushOutbox()).called(1);
     });
 

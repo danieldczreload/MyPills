@@ -94,12 +94,18 @@ void main() {
           expect(medId, isNotEmpty);
 
           // 5. Create a schedule for medication
+          final now = DateTime.now();
+          final startDate =
+              '${now.year.toString().padLeft(4, '0')}-'
+              '${now.month.toString().padLeft(2, '0')}-'
+              '${now.day.toString().padLeft(2, '0')}';
           final schedResp = await apiClient.dio.post<Map<String, dynamic>>(
             '/profiles/$profileId/schedules',
             data: {
               'medicationId': medId,
               'type': 'daily',
-              'startDate': DateTime.now().toUtc().toIso8601String(),
+              'startDate': startDate,
+              'timezone': 'America/Mexico_City',
               'doseAmount': 500,
               'doseUnit': 'mg',
               'timesOfDay': [

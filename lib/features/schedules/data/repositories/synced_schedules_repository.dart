@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:my_pills/core/db/app_database.dart';
 import 'package:my_pills/core/result/result.dart';
 import 'package:my_pills/core/sync/sync_engine.dart';
+import 'package:my_pills/core/utils/calendar_date.dart';
+import 'package:my_pills/core/utils/device_timezone.dart';
 import 'package:my_pills/features/schedules/domain/entities/dose.dart';
 import 'package:my_pills/features/schedules/domain/entities/schedule.dart';
 import 'package:my_pills/features/schedules/domain/repositories/schedule_repository.dart';
@@ -56,13 +58,15 @@ class SyncedScheduleRepository implements ScheduleRepository {
         specificDays: (_) => 'specific_days',
       );
 
-      final Map<String, dynamic> payload = {
+      final timezone = DeviceTimezone.currentIanaId();
+      final payload = <String, dynamic>{
         'medicationId': medicationRef,
         'localMedicationId': value.medicationId,
         'type': type,
-        'startDate': value.startDate.toUtc().toIso8601String(),
+        'startDate': CalendarDate.toIso(value.startDate),
         if (value.endDate != null)
-          'endDate': value.endDate!.toUtc().toIso8601String(),
+          'endDate': CalendarDate.toIso(value.endDate!),
+        'timezone': ?timezone,
         'clientId': clientId,
         if (value.dose != null) ...{
           'doseAmount': canonicalizeDoseAmount(value.dose!.amount),

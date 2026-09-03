@@ -102,6 +102,17 @@ Shadow values → `SereneTheme.standard()` in `serene_theme.dart`.
 - Filled: `surfaceContainerLow`, no border.
 - Focus: background → `surfaceContainerLowest` + 1pt ghost border of `primary` @ 20%.
 
+### Time picker — Dose time
+
+Medication times are **known exact values** (08:00, 14:30), not times the user explores on a clock face. Never use the Material dial `TimePicker`.
+
+- **Inline field:** `surfaceContainerLowest`, radius `lg`, padding `lg`. Hour and minute are independent steppers with **≥ 48 dp** tap targets. Period is a stacked pair of pills (`a. m.` / `p. m.`), hidden when `MediaQuery.alwaysUse24HourFormat` is true.
+- Chevrons actually change the value. Tapping the numeral opens the edit sheet.
+- **Edit sheet:** modal bottom sheet, glass surface (`surfaceContainerLowest` @ 70% + 20px blur), top radius `lg`, 500ms `easeOutCubic` entry / `easeInCubic` exit. Two wheels (hour, minute) plus period. Confirm = primary pill button. Cancel = tertiary text. Dismiss without confirm keeps the previous value.
+- Minutes: 1-minute resolution (doses like 08:15).
+- 12h / 24h follows the device (`MediaQuery.alwaysUse24HourFormat`). es-MX default is 12h.
+- Forbidden: Material dial, English `"AM"`/`"PM"` literals, hard-coded hex/px, 1px sectioning borders.
+
 ### Glass bottom navigation
 
 - Floating container suspended `lg` (16) from the bottom edge, horizontal inset `lg`.

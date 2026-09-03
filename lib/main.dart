@@ -5,11 +5,11 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:my_pills/app/providers.dart';
 import 'package:my_pills/app/router.dart';
 import 'package:my_pills/core/config/env_config.dart';
 import 'package:my_pills/core/theme/app_theme.dart';
+import 'package:my_pills/core/utils/device_timezone.dart';
 import 'package:my_pills/core/utils/log.dart';
 import 'package:my_pills/features/notifications/data/services/notification_init.dart';
 import 'package:my_pills/features/notifications/presentation/foreground_push_handler.dart';
@@ -17,8 +17,6 @@ import 'package:my_pills/features/notifications/presentation/in_app_reminder_ove
 import 'package:my_pills/features/notifications/presentation/providers/notification_providers.dart';
 import 'package:my_pills/l10n/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:timezone/data/latest_all.dart' as tz;
-import 'package:timezone/timezone.dart' as tz;
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -26,52 +24,6 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     await Firebase.initializeApp();
   } catch (_) {}
   mlog('mypills.fcm', 'Handling background message: ${message.messageId}');
-}
-
-/// Resolves the local IANA timezone with multiple fallback strategies and
-/// applies it to the `timezone` package.
-Future<void> _setUpTimezone() async {
-  String? identifier;
-  try {
-    final info = await FlutterTimezone.getLocalTimezone();
-    identifier = info.identifier;
-    mlog('mypills.boot', 'FlutterTimezone -> $identifier');
-  } catch (e) {
-    mlog('mypills.boot', 'FlutterTimezone failed: $e');
-  }
-
-  tz.initializeTimeZones();
-  if (identifier != null && identifier.isNotEmpty) {
-    try {
-      tz.setLocalLocation(tz.getLocation(identifier));
-      mlog('mypills.boot', 'tz.local successfully set to $identifier');
-      return;
-    } catch (e) {
-      mlog('mypills.boot', 'tz.getLocation("$identifier") failed: $e');
-    }
-  }
-
-  // Fallback 1: match by GMT offset
-  final offsetHours = DateTime.now().timeZoneOffset.inHours;
-  final sign = offsetHours >= 0 ? '+' : '-';
-  final offsetName = 'Etc/GMT$sign${offsetHours.abs()}';
-  try {
-    tz.setLocalLocation(tz.getLocation(offsetName));
-    mlog('mypills.boot', 'tz.local set to fallback offset: $offsetName');
-    return;
-  } catch (_) {}
-
-  // Fallback 2: America/Mexico_City for Mexico Central Standard Time (GMT-6)
-  if (offsetHours == -6) {
-    try {
-      tz.setLocalLocation(tz.getLocation('America/Mexico_City'));
-      mlog('mypills.boot', 'tz.local set to fallback America/Mexico_City');
-      return;
-    } catch (_) {}
-  }
-
-  // Last resort: UTC
-  mlog('mypills.boot', 'WARNING: tz.local defaulted to UTC');
 }
 
 Future<void> main() async {
@@ -86,7 +38,7 @@ Future<void> main() async {
     mlog('mypills.boot', 'Firebase init failed (non-fatal): $e\n$st');
   }
 
-  await _setUpTimezone();
+  await DeviceTimezone.initializeLocal();
 
   final prefs = await SharedPreferences.getInstance();
   final plugin = await initNotifications();

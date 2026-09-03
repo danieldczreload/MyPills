@@ -19,6 +19,7 @@ import 'package:my_pills/features/schedules/presentation/dose_input_controller.d
 import 'package:my_pills/features/schedules/presentation/persist_new_schedule.dart';
 import 'package:my_pills/features/schedules/presentation/widgets/dose_picker.dart';
 import 'package:my_pills/features/schedules/presentation/widgets/notification_type_selector.dart';
+import 'package:my_pills/features/schedules/presentation/widgets/schedule_time_picker.dart';
 import 'package:my_pills/l10n/app_localizations.dart';
 
 class SpecificDaysSchedulerScreen extends ConsumerStatefulWidget {
@@ -231,8 +232,14 @@ class _SpecificDaysSchedulerScreenState
                         ],
                       ),
                       SizedBox(height: serene.spacing.md),
-                      for (var i = 0; i < _times.length; i++)
-                        _timePickerCard(i),
+                      for (var i = 0; i < _times.length; i++) ...[
+                        ScheduleTimePickerField(
+                          value: _times[i],
+                          onChanged: (time) => setState(() => _times[i] = time),
+                        ),
+                        if (i < _times.length - 1)
+                          SizedBox(height: serene.spacing.sm),
+                      ],
                     ],
                   ),
                 ),
@@ -349,103 +356,6 @@ class _SpecificDaysSchedulerScreenState
     );
   }
 
-  Widget _timePickerCard(int index) {
-    final theme = Theme.of(context);
-    final serene = theme.extension<SereneTheme>()!;
-    final time = _times[index];
-    final isAM = time.period == DayPeriod.am;
-
-    return Container(
-      padding: EdgeInsets.all(serene.spacing.lg),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
-        borderRadius: serene.radius.lg,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _timePart(
-            time.hourOfPeriod.toString().padLeft(2, '0'),
-            () => _pickTime(index),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text(
-              ':',
-              style: theme.textTheme.displaySmall?.copyWith(
-                color: theme.colorScheme.outlineVariant,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          _timePart(
-            time.minute.toString().padLeft(2, '0'),
-            () => _pickTime(index),
-          ),
-          SizedBox(width: serene.spacing.lg),
-          Column(
-            children: [
-              _periodButton('AM', isAM, () => _togglePeriod(index, true)),
-              const SizedBox(height: 8),
-              _periodButton('PM', !isAM, () => _togglePeriod(index, false)),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _timePart(String value, VoidCallback onTap) {
-    final theme = Theme.of(context);
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Icon(Icons.expand_less, color: theme.colorScheme.outlineVariant),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              value,
-              style: theme.textTheme.displaySmall?.copyWith(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          Icon(Icons.expand_more, color: theme.colorScheme.outlineVariant),
-        ],
-      ),
-    );
-  }
-
-  Widget _periodButton(String label, bool isActive, VoidCallback onTap) {
-    final theme = Theme.of(context);
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isActive
-              ? theme.colorScheme.primary
-              : theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(100),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isActive ? Colors.white : theme.colorScheme.onSurfaceVariant,
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _durationOption({
     required String title,
     required String description,
@@ -533,24 +443,6 @@ class _SpecificDaysSchedulerScreenState
         ),
       ),
     );
-  }
-
-  void _togglePeriod(int index, bool isAM) {
-    final time = _times[index];
-    if (time.period == DayPeriod.am && !isAM) {
-      setState(() => _times[index] = time.replacing(hour: time.hour + 12));
-    } else if (time.period == DayPeriod.pm && isAM) {
-      setState(() => _times[index] = time.replacing(hour: time.hour - 12));
-    }
-  }
-
-  Future<void> _pickTime(int index) async {
-    final selected = await showTimePicker(
-      context: context,
-      initialTime: _times[index],
-    );
-    if (selected == null) return;
-    setState(() => _times[index] = selected);
   }
 
   void _addTime() {

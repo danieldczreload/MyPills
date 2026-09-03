@@ -54,6 +54,19 @@ abstract final class AppTheme {
         radius: const Radius.circular(8),
         interactive: true,
       ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: AppColors.surfaceContainerLowest,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        modalElevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            top: SereneTheme.standard().radius.lgRadius,
+          ),
+        ),
+        showDragHandle: true,
+        dragHandleColor: AppColors.outlineVariant.withValues(alpha: 0.5),
+      ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.surfaceContainerLowest,

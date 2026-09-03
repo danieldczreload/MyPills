@@ -517,5 +517,26 @@
   },
 
   "medicationFallbackName": "Medicamento",
-  "@medicationFallbackName": { "description": "Fallback medication name when the selected medication is missing from the local list." }
+  "@medicationFallbackName": { "description": "Fallback medication name when the selected medication is missing from the local list." },
+
+  "timePickerSheetTitle": "Hora de la dosis",
+  "@timePickerSheetTitle": { "description": "Title of the dose time wheel bottom sheet." },
+
+  "timePickerConfirm": "Confirmar",
+  "@timePickerConfirm": { "description": "Confirm button on the dose time wheel sheet." },
+
+  "timePickerCancel": "Cancelar",
+  "@timePickerCancel": { "description": "Cancel button on the dose time wheel sheet." },
+
+  "timePickerHour": "Hora",
+  "@timePickerHour": { "description": "Semantics label for the hour stepper and wheel." },
+
+  "timePickerMinute": "Minuto",
+  "@timePickerMinute": { "description": "Semantics label for the minute stepper and wheel." },
+
+  "timePickerPeriodAm": "a. m.",
+  "@timePickerPeriodAm": { "description": "Ante meridiem period label (Spanish)." },
+
+  "timePickerPeriodPm": "p. m.",
+  "@timePickerPeriodPm": { "description": "Post meridiem period label (Spanish)." }
 }

@@ -1363,6 +1363,48 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Medicamento'**
   String get medicationFallbackName;
+
+  /// Title of the dose time wheel bottom sheet.
+  ///
+  /// In es, this message translates to:
+  /// **'Hora de la dosis'**
+  String get timePickerSheetTitle;
+
+  /// Confirm button on the dose time wheel sheet.
+  ///
+  /// In es, this message translates to:
+  /// **'Confirmar'**
+  String get timePickerConfirm;
+
+  /// Cancel button on the dose time wheel sheet.
+  ///
+  /// In es, this message translates to:
+  /// **'Cancelar'**
+  String get timePickerCancel;
+
+  /// Semantics label for the hour stepper and wheel.
+  ///
+  /// In es, this message translates to:
+  /// **'Hora'**
+  String get timePickerHour;
+
+  /// Semantics label for the minute stepper and wheel.
+  ///
+  /// In es, this message translates to:
+  /// **'Minuto'**
+  String get timePickerMinute;
+
+  /// Ante meridiem period label (Spanish).
+  ///
+  /// In es, this message translates to:
+  /// **'a. m.'**
+  String get timePickerPeriodAm;
+
+  /// Post meridiem period label (Spanish).
+  ///
+  /// In es, this message translates to:
+  /// **'p. m.'**
+  String get timePickerPeriodPm;
 }
 
 class _AppLocalizationsDelegate
