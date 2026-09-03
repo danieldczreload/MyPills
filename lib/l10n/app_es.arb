@@ -496,6 +496,9 @@
   "scheduleSavedCalendarSync": "Horario guardado. Los eventos se sincronizarán con tu calendario.",
   "@scheduleSavedCalendarSync": { "description": "Success toast after creating a schedule that will sync to a connected calendar." },
 
+  "scheduleSavedCalendarSyncFailed": "Horario guardado, pero no se pudo sincronizar el calendario.",
+  "@scheduleSavedCalendarSyncFailed": { "description": "Warning toast when schedule save succeeded but cloud calendar sync failed." },
+
   "scheduleSavedConnectCalendar": "Horario guardado. Recuerda vincular tu calendario en Configuración.",
   "@scheduleSavedConnectCalendar": { "description": "Warning toast when a schedule requests calendar sync but no calendar is connected." },
 

@@ -70,12 +70,14 @@ Future<void> persistNewSchedule({
     );
   }
 
+  var calendarSyncFailed = false;
   if (schedule.notifyCalendar && hasConnectedCalendar) {
     await ref.read(syncEngineProvider).flushOutbox();
     if (!context.mounted) return;
-    unawaited(
-      ref.read(pkceCalendarServiceProvider).syncCalendar(profileId: profileId),
-    );
+    final syncResult = await ref
+        .read(pkceCalendarServiceProvider)
+        .syncCalendar(profileId: profileId);
+    calendarSyncFailed = syncResult.isFailure;
   }
 
   if (!context.mounted) return;
@@ -86,6 +88,11 @@ Future<void> persistNewSchedule({
       l10n.scheduleSavedConnectCalendar,
       actionLabel: l10n.scheduleSavedConnectAction,
       onAction: () => context.push(AppRoutes.settings),
+    );
+  } else if (calendarSyncFailed) {
+    AppNotification.showWarning(
+      context,
+      l10n.scheduleSavedCalendarSyncFailed,
     );
   } else {
     AppNotification.showSuccess(

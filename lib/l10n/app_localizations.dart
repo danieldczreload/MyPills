@@ -1328,6 +1328,12 @@ abstract class AppLocalizations {
   /// **'Horario guardado. Los eventos se sincronizarán con tu calendario.'**
   String get scheduleSavedCalendarSync;
 
+  /// Warning toast when schedule save succeeded but cloud calendar sync failed.
+  ///
+  /// In es, this message translates to:
+  /// **'Horario guardado, pero no se pudo sincronizar el calendario.'**
+  String get scheduleSavedCalendarSyncFailed;
+
   /// Warning toast when a schedule requests calendar sync but no calendar is connected.
   ///
   /// In es, this message translates to:

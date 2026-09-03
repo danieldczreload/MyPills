@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:my_pills/core/errors/failure.dart';
 import 'package:my_pills/core/network/api_client.dart';
+import 'package:my_pills/core/network/http_error_body.dart';
 import 'package:my_pills/core/result/result.dart';
 import 'package:my_pills/core/storage/token_storage.dart';
 import 'package:my_pills/core/utils/log.dart';
@@ -116,9 +117,18 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Result<void>> logout() async {
     try {
-      await _apiClient.dio.post<dynamic>('/auth/logout');
+      final refreshToken = await _tokenStorage.getRefreshToken();
+      await _apiClient.dio.post<dynamic>(
+        '/auth/logout',
+        data: {
+          if (refreshToken != null && refreshToken.isNotEmpty)
+            'refreshToken': refreshToken,
+        },
+        options: Options(extra: {kHttpBestEffortExtra: true}),
+      );
     } catch (_) {
-      // Best-effort remote logout notification
+      // Local session must still end if the device is offline or prod
+      // has not deployed this route yet (idempotent 204 when it has).
     } finally {
       await _tokenStorage.clearTokens();
     }

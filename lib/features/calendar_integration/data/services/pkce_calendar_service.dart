@@ -4,6 +4,7 @@ import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:my_pills/core/errors/failure.dart';
 import 'package:my_pills/core/network/api_client.dart';
+import 'package:my_pills/core/network/http_error_body.dart';
 import 'package:my_pills/core/result/result.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -348,24 +349,22 @@ class PkceCalendarService {
           e.type == DioExceptionType.connectionTimeout) {
         return const Result.failure(Failure.network());
       }
-      if (e.response?.statusCode != null && e.response!.statusCode! < 500) {
-        final data = e.response?.data;
-        if (data is Map<String, dynamic>) {
-          final error = data['error'];
-          if (error is Map<String, dynamic>) {
-            return Result.failure(
-              Failure.server(
-                statusCode: e.response!.statusCode!,
-                message: _syncFailureMessage(error),
-              ),
-            );
-          }
+      final data = e.response?.data;
+      if (data is Map<String, dynamic>) {
+        final error = data['error'];
+        if (error is Map<String, dynamic>) {
+          return Result.failure(
+            Failure.server(
+              statusCode: e.response?.statusCode ?? 500,
+              message: _syncFailureMessage(error),
+            ),
+          );
         }
       }
       return FailureResult(
         Failure.server(
           statusCode: e.response?.statusCode ?? 500,
-          message: e.message,
+          message: jsonServerErrorMessage(data),
         ),
       );
     } catch (e, st) {

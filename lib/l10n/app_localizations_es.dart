@@ -705,6 +705,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Horario guardado. Los eventos se sincronizarán con tu calendario.';
 
   @override
+  String get scheduleSavedCalendarSyncFailed =>
+      'Horario guardado, pero no se pudo sincronizar el calendario.';
+
+  @override
   String get scheduleSavedConnectCalendar =>
       'Horario guardado. Recuerda vincular tu calendario en Configuración.';
 

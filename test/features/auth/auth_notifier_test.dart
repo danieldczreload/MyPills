@@ -154,17 +154,27 @@ void main() {
         ).thenAnswer((_) => flush.future);
 
         final container = createContainer(autoDispose: false);
-        await container
+        final login = container
             .read(authProvider.notifier)
             .loginWithGoogle(
               'valid-token',
             );
+        await Future<void>.delayed(Duration.zero);
         container.dispose();
         flush.complete(const Result.success(null));
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(const Duration(milliseconds: 20));
+        await login;
       },
     );
+
+    test('loginWithGoogle awaits profile restore once', () async {
+      final container = createContainer();
+      await container
+          .read(authProvider.notifier)
+          .loginWithGoogle('valid-token');
+
+      verify(() => mockSyncEngine.fetchAndRestoreProfiles()).called(1);
+      verifyNever(() => mockSyncEngine.syncProfile(any()));
+    });
 
     test('logout resets auth state to null', () async {
       when(

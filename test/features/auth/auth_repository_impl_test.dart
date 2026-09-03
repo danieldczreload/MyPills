@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:my_pills/core/network/api_client.dart';
+import 'package:my_pills/core/network/http_error_body.dart';
 import 'package:my_pills/core/storage/token_storage.dart';
 
 import 'package:my_pills/features/auth/data/repositories/auth_repository_impl.dart';
@@ -56,6 +57,10 @@ void main() {
   late MockTokenStorage mockTokenStorage;
   late AuthRepositoryImpl repository;
 
+  setUpAll(() {
+    registerFallbackValue(Options());
+  });
+
   setUp(() {
     mockApiClient = MockApiClient();
     mockDio = MockDio();
@@ -77,6 +82,9 @@ void main() {
     ).thenAnswer((_) async {});
     when(() => mockTokenStorage.getDisplayName()).thenAnswer((_) async => null);
     when(() => mockTokenStorage.getPhotoUrl()).thenAnswer((_) async => null);
+    when(
+      () => mockTokenStorage.getRefreshToken(),
+    ).thenAnswer((_) async => 'ref_456');
 
     repository = AuthRepositoryImpl(
       apiClient: mockApiClient,
@@ -207,7 +215,13 @@ void main() {
           tokenStorage: storage,
         );
         stubGoogleLoginAndMe();
-        when(() => mockDio.post<dynamic>('/auth/logout')).thenAnswer(
+        when(
+          () => mockDio.post<dynamic>(
+            '/auth/logout',
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+          ),
+        ).thenAnswer(
           (_) async => Response(
             statusCode: 200,
             requestOptions: RequestOptions(path: '/auth/logout'),
@@ -257,11 +271,52 @@ void main() {
       },
     );
 
-    test('logout clears token storage', () async {
-      when(() => mockDio.post<dynamic>('/auth/logout')).thenAnswer(
+    test('logout sends refreshToken and clears token storage', () async {
+      when(
+        () => mockDio.post<dynamic>(
+          '/auth/logout',
+          data: any(named: 'data'),
+          options: any(named: 'options'),
+        ),
+      ).thenAnswer(
         (_) async => Response(
-          statusCode: 200,
+          statusCode: 204,
           requestOptions: RequestOptions(path: '/auth/logout'),
+        ),
+      );
+
+      final result = await repository.logout();
+
+      expect(result.isSuccess, isTrue);
+      verify(
+        () => mockDio.post<dynamic>(
+          '/auth/logout',
+          data: {'refreshToken': 'ref_456'},
+          options: any(named: 'options'),
+        ),
+      ).called(1);
+      verify(() => mockTokenStorage.clearTokens()).called(1);
+    });
+
+    test('logout still succeeds when remote logout returns 404', () async {
+      when(
+        () => mockDio.post<dynamic>(
+          '/auth/logout',
+          data: any(named: 'data'),
+          options: any(named: 'options'),
+        ),
+      ).thenAnswer(
+        (_) async => throw DioException(
+          requestOptions: RequestOptions(
+            path: '/auth/logout',
+            extra: {kHttpBestEffortExtra: true},
+          ),
+          response: Response(
+            requestOptions: RequestOptions(path: '/auth/logout'),
+            statusCode: 404,
+            data: '<html><title>No route found</title></html>',
+          ),
+          type: DioExceptionType.badResponse,
         ),
       );
 

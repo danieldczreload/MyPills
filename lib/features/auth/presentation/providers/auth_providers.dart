@@ -42,7 +42,7 @@ class AuthNotifier extends _$AuthNotifier {
     if (result case Success(:final value)) {
       state = AsyncValue.data(value);
       await _rememberGoogleClaims(value);
-      _postLoginSync();
+      await _syncThenSeed();
     } else {
       state = const AsyncValue.data(null);
     }
@@ -65,7 +65,7 @@ class AuthNotifier extends _$AuthNotifier {
     if (result case Success(:final value)) {
       state = AsyncValue.data(value);
       await _rememberGoogleClaims(value);
-      _postLoginSync();
+      await _syncThenSeed();
     } else {
       state = const AsyncValue.data(null);
     }
@@ -89,10 +89,6 @@ class AuthNotifier extends _$AuthNotifier {
     state = const AsyncValue.data(null);
   }
 
-  void _postLoginSync() {
-    unawaited(_syncThenSeed());
-  }
-
   /// Completes Microsoft PKCE authorization from deep link callback.
   Future<Result<AuthUser>> completeMicrosoftLogin({
     required String code,
@@ -104,7 +100,7 @@ class AuthNotifier extends _$AuthNotifier {
     if (result case Success(:final value)) {
       state = AsyncValue.data(value);
       await _rememberGoogleClaims(value);
-      _postLoginSync();
+      await _syncThenSeed();
     } else {
       state = const AsyncValue.data(null);
     }

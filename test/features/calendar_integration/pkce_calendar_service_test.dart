@@ -155,6 +155,39 @@ void main() {
       },
     );
 
+    test('syncCalendar does not leak HTML 500 bodies into Failure', () async {
+      when(
+        () => mockDio.post<Map<String, dynamic>>(
+          '/calendars/sync',
+          queryParameters: any(named: 'queryParameters'),
+        ),
+      ).thenAnswer(
+        (_) async => throw DioException(
+          requestOptions: RequestOptions(path: '/calendars/sync'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/calendars/sync'),
+            statusCode: 500,
+            data: '''
+<!DOCTYPE html>
+<html><head><title>Unique violation uniq_dose_event_provider</title></head>
+<body><style>:root { --color-error: #b0413e; }</style></body></html>
+''',
+          ),
+          type: DioExceptionType.badResponse,
+          message:
+              'This exception was thrown because the response has a '
+              'status code of 500',
+        ),
+      );
+
+      final result = await service.syncCalendar(profileId: 'prof_1');
+      expect(result.isFailure, isTrue);
+      final failure = (result as FailureResult<Map<String, dynamic>>).failure;
+      expect(failure, isA<ServerFailure>());
+      expect((failure as ServerFailure).statusCode, 500);
+      expect(failure.message, isNull);
+    });
+
     test('getConnections returns list of provider maps on 200', () async {
       when(
         () => mockDio.get<dynamic>(

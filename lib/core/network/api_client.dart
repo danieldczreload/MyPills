@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:my_pills/core/config/env_config.dart';
+import 'package:my_pills/core/network/http_error_body.dart';
 import 'package:my_pills/core/storage/token_storage.dart';
 import 'package:my_pills/core/utils/log.dart';
 
@@ -45,15 +46,17 @@ class ApiClient {
         return client;
       };
     }
-    if (kDebugMode) {
-      _dio.interceptors.add(_DebugHttpLogInterceptor());
-    }
+    // Auth must run before the debug logger so a recovered 401 is logged
+    // as the retried 200, not as a false ERROR.
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: _onRequest,
         onError: _onError,
       ),
     );
+    if (kDebugMode) {
+      _dio.interceptors.add(_DebugHttpLogInterceptor());
+    }
   }
 
   final Dio _dio;
@@ -85,6 +88,9 @@ class ApiClient {
     if (err.response?.statusCode == 401 &&
         err.requestOptions.extra['requiresAuth'] != false &&
         err.requestOptions.path != '/auth/refresh') {
+      if (kDebugMode && _refreshCompleter == null) {
+        mlog('mypills.http', '401 — refreshing access token');
+      }
       final success = await _refreshTokenSingleFlight();
       if (success) {
         final newAccessToken = await _tokenStorage.getAccessToken();
@@ -180,14 +186,16 @@ class _DebugHttpLogInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    final body = err.response?.data;
-    mlogError(
-      'mypills.http',
-      '${err.requestOptions.method} ${err.requestOptions.uri} '
-          'failed: ${err.type.name} status=${err.response?.statusCode}'
-          '${body != null ? ' body=$body' : ''}',
-      error: err.error,
-    );
+    final summary = summarizeHttpErrorBody(err.response?.data);
+    final line =
+        '${err.requestOptions.method} ${err.requestOptions.uri} '
+        'failed: ${err.type.name} status=${err.response?.statusCode}'
+        '${summary.isEmpty ? '' : ' body=$summary'}';
+    if (err.requestOptions.extra[kHttpBestEffortExtra] == true) {
+      mlog('mypills.http', '$line (best-effort)');
+    } else {
+      mlogError('mypills.http', line);
+    }
     handler.next(err);
   }
 }
