@@ -121,6 +121,7 @@ class ScheduleExpander {
             scheduleId: schedule.id,
             scheduledAt: scheduledAt,
             status: DoseStatus.pending,
+            dose: schedule.dose,
           ),
         );
       }
@@ -177,6 +178,7 @@ class ScheduleExpander {
             scheduleId: schedule.id,
             scheduledAt: scheduledAt,
             status: DoseStatus.pending,
+            dose: schedule.dose,
           ),
         );
       }
@@ -256,6 +258,7 @@ class ScheduleExpander {
             scheduleId: schedule.id,
             scheduledAt: cursor,
             status: DoseStatus.pending,
+            dose: schedule.dose,
           ),
         );
       }

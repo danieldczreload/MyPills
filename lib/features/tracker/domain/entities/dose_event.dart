@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:my_pills/features/schedules/domain/entities/dose.dart';
 
 part 'dose_event.freezed.dart';
 
@@ -22,5 +23,6 @@ abstract class DoseEvent with _$DoseEvent {
     required DateTime scheduledAt,
     required DoseStatus status,
     DateTime? takenAt,
+    Dose? dose,
   }) = _DoseEvent;
 }

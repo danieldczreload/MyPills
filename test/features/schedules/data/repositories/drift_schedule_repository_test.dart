@@ -63,6 +63,29 @@ void main() {
     },
   );
 
+  test(
+    'create assigns the medication to the repository profileId',
+    () async {
+      final otherProfile = DriftScheduleRepository(db, profileId: 'kid');
+      final created = await otherProfile.create(
+        Schedule.daily(
+          id: 0,
+          medicationId: medicationId,
+          timesOfDay: const [(hour: 8, minute: 0)],
+          startDate: DateTime(2024, 6),
+        ),
+      );
+      expect(created.isSuccess, isTrue);
+
+      final med = await db.medicationDao.getMedicationById(medicationId);
+      expect(med?.profileId, 'kid');
+      final schedule = await db.scheduleDao.getScheduleById(
+        created.valueOrNull!.id,
+      );
+      expect(schedule?.profileId, 'kid');
+    },
+  );
+
   test('watchAll emits updates after creating a schedule', () async {
     final stream = repository.watchAll();
 

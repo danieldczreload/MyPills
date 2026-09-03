@@ -17,6 +17,12 @@ class SchedulesTable extends Table {
 
   TextColumn get ruleJson => text()();
 
+  RealColumn get doseAmount => real().nullable()();
+
+  TextColumn get doseUnit => text().nullable()();
+
+  TextColumn get doseDisplay => text().nullable()();
+
   DateTimeColumn get startDateUtc => dateTime()();
 
   DateTimeColumn get endDateUtc => dateTime().nullable()();

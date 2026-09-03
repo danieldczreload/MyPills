@@ -8,6 +8,8 @@ import 'package:my_pills/features/notifications/data/services/flutter_local_noti
 import 'package:my_pills/features/notifications/data/services/remote_notification_preferences_service.dart';
 import 'package:my_pills/features/notifications/domain/entities/notification_preferences.dart';
 import 'package:my_pills/features/notifications/domain/repositories/notification_preferences_repository.dart';
+import 'package:my_pills/features/medications/presentation/providers/medications_providers.dart';
+import 'package:my_pills/features/notifications/domain/entities/in_app_banner.dart';
 import 'package:my_pills/features/notifications/domain/services/in_app_reminder_service.dart';
 import 'package:my_pills/features/notifications/domain/services/notification_scheduler.dart';
 import 'package:my_pills/features/tracker/domain/entities/dose_event.dart';
@@ -79,6 +81,10 @@ final inAppReminderServiceProvider = Provider<InAppReminderService>((ref) {
     prefs: prefs,
     minutesBefore: () =>
         ref.read(notificationPreferencesProvider).reminderMinutesBefore,
+    medicationNameOf: (id) {
+      final meds = ref.read(medicationsStreamProvider).value?.valueOrNull;
+      return meds?.where((m) => m.id == id).firstOrNull?.name ?? 'Medicamento';
+    },
   );
 
   ref.onDispose(service.dispose);
@@ -86,7 +92,7 @@ final inAppReminderServiceProvider = Provider<InAppReminderService>((ref) {
   return service;
 });
 
-final inAppRemindersStreamProvider = StreamProvider<DoseEvent>((ref) {
+final inAppBannersStreamProvider = StreamProvider<InAppBanner>((ref) {
   final service = ref.watch(inAppReminderServiceProvider);
-  return service.reminders;
+  return service.banners;
 });

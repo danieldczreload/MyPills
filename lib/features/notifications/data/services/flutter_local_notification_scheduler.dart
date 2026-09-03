@@ -10,11 +10,6 @@ class FlutterLocalNotificationScheduler implements NotificationScheduler {
 
   final FlutterLocalNotificationsPlugin _plugin;
 
-  /// Last detail string set by [scheduleTestIn] — exposed so the diagnostic
-  /// UI can show exactly what was scheduled (tz, when, mode) without
-  /// requiring the user to read console logs.
-  static String? lastTestDetail;
-
   static int _beforeId(int doseId) => doseId * 2;
   static int _exactId(int doseId) => doseId * 2 + 1;
 
@@ -32,14 +27,8 @@ class FlutterLocalNotificationScheduler implements NotificationScheduler {
     android: _androidDetails,
   );
 
-  /// Use `alarmClock` when exact alarms are allowed — it maps to
-  /// `AlarmManager.setAlarmClock()`, the same path the system Clock app uses.
-  /// On Pixel/Android 14+ this is the only mode that fires reliably in
-  /// background; `setExactAndAllowWhileIdle` is silently throttled in some
-  /// idle states even with `USE_EXACT_ALARM` granted.
-  AndroidScheduleMode get _scheduleMode => exactAlarmsAllowed
-      ? AndroidScheduleMode.alarmClock
-      : AndroidScheduleMode.inexactAllowWhileIdle;
+  static const AndroidScheduleMode _scheduleMode =
+      AndroidScheduleMode.inexactAllowWhileIdle;
 
   @override
   Future<void> scheduleForDoseEvents(
@@ -49,11 +38,10 @@ class FlutterLocalNotificationScheduler implements NotificationScheduler {
     required String Function(DoseEvent) bodyBuilder,
   }) async {
     final now = DateTime.now();
-    final mode = _scheduleMode;
     mlog(
       'mypills.notif',
       'scheduleForDoseEvents count=${doseEvents.length} '
-          'minutesBefore=$minutesBefore mode=$mode tz=${tz.local.name}',
+          'minutesBefore=$minutesBefore mode=$_scheduleMode tz=${tz.local.name}',
     );
 
     var scheduled = 0;
@@ -77,7 +65,7 @@ class FlutterLocalNotificationScheduler implements NotificationScheduler {
           when: beforeTime,
           title: title,
           body: body,
-          mode: mode,
+          mode: _scheduleMode,
         );
         ok ? scheduled++ : failed++;
       }
@@ -88,7 +76,7 @@ class FlutterLocalNotificationScheduler implements NotificationScheduler {
           when: exactTime,
           title: title,
           body: body,
-          mode: mode,
+          mode: _scheduleMode,
         );
         ok ? scheduled++ : failed++;
       } else {
@@ -146,34 +134,17 @@ class FlutterLocalNotificationScheduler implements NotificationScheduler {
     await _plugin.cancel(_exactId(doseEventId));
   }
 
-  /// Reserved id range used by diagnostic helpers ([scheduleTestIn] uses
-  /// 999999). [cancelAll] preserves these so that pressing "Probar push en
-  /// 1 min" then locking the screen — which fires [didChangeAppLifecycleState]
-  /// → syncNotifications → cancelAll on resume — doesn't silently kill the
-  /// test alarm before it fires.
-  static const int _diagIdMin = 999000;
-  static const int _diagIdMax = 999999;
-
   @override
   Future<void> cancelAll() async {
     try {
-      final pending = await _plugin.pendingNotificationRequests();
-      for (final p in pending) {
-        if (p.id >= _diagIdMin && p.id <= _diagIdMax) continue;
-        await _plugin.cancel(p.id);
-      }
+      await _plugin.cancelAll();
     } catch (e, st) {
-      if (e is! Error) {
-        mlogError(
-          'mypills.notif',
-          'cancelAll fallback to plugin.cancelAll',
-          error: e,
-          stackTrace: st,
-        );
-      }
-      try {
-        await _plugin.cancelAll();
-      } catch (_) {}
+      mlogError(
+        'mypills.notif',
+        'cancelAll failed',
+        error: e,
+        stackTrace: st,
+      );
     }
   }
 
@@ -207,40 +178,5 @@ class FlutterLocalNotificationScheduler implements NotificationScheduler {
   Future<void> showTest({required String title, required String body}) async {
     mlog('mypills.notif', 'showTest title="$title"');
     await _plugin.show(0, title, body, _details);
-  }
-
-  @override
-  Future<void> scheduleTestIn({
-    required Duration delay,
-    required String title,
-    required String body,
-  }) async {
-    final when = DateTime.now().add(delay);
-    final mode = _scheduleMode;
-    // Build via UTC so the absolute moment is correct even if tz.local is misconfigured.
-    final tzWhen = tz.TZDateTime.from(when.toUtc(), tz.UTC);
-    final detail =
-        'when=$when\ntzWhen=$tzWhen\ntz.local=${tz.local.name}\nmode=$mode';
-    mlog('mypills.notif', 'scheduleTestIn $detail');
-    try {
-      await _plugin.zonedSchedule(
-        999999,
-        title,
-        body,
-        tzWhen,
-        _details,
-        androidScheduleMode: mode,
-      );
-      lastTestDetail = '$detail\nresult=scheduled OK';
-    } catch (e, st) {
-      lastTestDetail = '$detail\nresult=ERROR $e';
-      mlogError(
-        'mypills.notif',
-        'scheduleTestIn FAILED',
-        error: e,
-        stackTrace: st,
-      );
-      rethrow;
-    }
   }
 }

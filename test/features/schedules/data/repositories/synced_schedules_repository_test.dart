@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -5,6 +7,7 @@ import 'package:my_pills/core/db/app_database.dart';
 import 'package:my_pills/core/result/result.dart';
 import 'package:my_pills/core/sync/sync_engine.dart';
 import 'package:my_pills/features/schedules/data/repositories/synced_schedules_repository.dart';
+import 'package:my_pills/features/schedules/domain/entities/dose.dart';
 import 'package:my_pills/features/schedules/domain/entities/schedule.dart';
 import 'package:my_pills/features/schedules/domain/repositories/schedule_repository.dart';
 
@@ -56,6 +59,7 @@ void main() {
       medicationId: 10,
       timesOfDay: const [(hour: 8, minute: 0)],
       startDate: DateTime(2026),
+      dose: const Dose(amount: 5, unit: 'ml', display: '5 ml'),
     );
 
     test('getAll delegates to localRepo', () async {
@@ -94,6 +98,12 @@ void main() {
       expect(outboxItems.length, equals(1));
       expect(outboxItems.first.entityType, equals('schedule'));
       expect(outboxItems.first.action, equals('CREATE'));
+      final payload =
+          jsonDecode(outboxItems.first.payloadJson) as Map<String, dynamic>;
+      expect(payload['doseAmount'], 5);
+      expect(payload['doseUnit'], 'ml');
+      expect(payload['clientId'], outboxItems.first.clientId);
+      expect(payload.containsKey('dosage'), isFalse);
       verify(() => mockSyncEngine.flushOutbox()).called(1);
     });
 

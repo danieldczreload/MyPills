@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:my_pills/features/schedules/domain/entities/dose.dart';
 
 part 'schedule.freezed.dart';
 
@@ -27,6 +28,7 @@ sealed class Schedule with _$Schedule {
     DateTime? endDate,
     @Default(true) bool notifyPush,
     @Default(false) bool notifyCalendar,
+    Dose? dose,
   }) = DailySchedule;
 
   /// Recurring every N hours within a daily window (e.g. every 4 h from 08:00).
@@ -44,6 +46,7 @@ sealed class Schedule with _$Schedule {
     DateTime? endDate,
     @Default(true) bool notifyPush,
     @Default(false) bool notifyCalendar,
+    Dose? dose,
   }) = DailyIntervalSchedule;
 
   /// Fixed days of the week at fixed clock times (e.g. Mon/Wed/Fri at 09:00).
@@ -58,5 +61,6 @@ sealed class Schedule with _$Schedule {
     DateTime? endDate,
     @Default(true) bool notifyPush,
     @Default(false) bool notifyCalendar,
+    Dose? dose,
   }) = SpecificDaysSchedule;
 }

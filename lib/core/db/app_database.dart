@@ -34,7 +34,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -66,6 +66,14 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(schedulesTable, schedulesTable.profileId);
         await m.addColumn(doseEventsTable, doseEventsTable.profileId);
         await m.addColumn(taxonomyGroupsTable, taxonomyGroupsTable.profileId);
+      }
+      if (from < 8) {
+        await m.addColumn(schedulesTable, schedulesTable.doseAmount);
+        await m.addColumn(schedulesTable, schedulesTable.doseUnit);
+        await m.addColumn(schedulesTable, schedulesTable.doseDisplay);
+        await m.addColumn(doseEventsTable, doseEventsTable.doseAmount);
+        await m.addColumn(doseEventsTable, doseEventsTable.doseUnit);
+        await m.addColumn(doseEventsTable, doseEventsTable.doseDisplay);
       }
     },
   );

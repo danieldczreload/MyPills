@@ -448,5 +448,71 @@
       "medication": { "type": "String" },
       "profileName": { "type": "String" }
     }
-  }
+  },
+
+  "doseSectionTitle": "Dosis",
+  "@doseSectionTitle": { "description": "Section title for dose amount + unit on the schedule form." },
+
+  "doseSectionSubtitle": "Cuánto tomar en cada recordatorio",
+  "@doseSectionSubtitle": { "description": "Helper text under the dose section on the schedule form." },
+
+  "doseAmountLabel": "Cantidad",
+  "@doseAmountLabel": { "description": "Input label for numeric dose amount." },
+
+  "doseUnitLabel": "Unidad",
+  "@doseUnitLabel": { "description": "Input label for dose unit picker." },
+
+  "errorDoseRequired": "Indica la cantidad y la unidad de la dosis",
+  "@errorDoseRequired": { "description": "Validation error when creating a schedule without dose amount/unit." },
+
+  "errorInvalidDoseAmount": "La cantidad debe ser mayor a 0 y tener como máximo 4 decimales",
+  "@errorInvalidDoseAmount": { "description": "Validation error for non-positive or over-precise dose amount." },
+
+  "errorInvalidDoseUnit": "Selecciona una unidad de dosis",
+  "@errorInvalidDoseUnit": { "description": "Validation error when dose unit is missing." },
+
+  "notificationBodyWithDose": "Es hora de tomar {medicationName} ({doseDisplay})",
+  "@notificationBodyWithDose": {
+    "description": "Notification body including the server-formatted dose display.",
+    "placeholders": {
+      "medicationName": { "type": "String" },
+      "doseDisplay": { "type": "String" }
+    }
+  },
+
+  "notificationBodyWithDoseAndProfile": "Es hora de tomar {medicationName} ({doseDisplay}) — {profileName}",
+  "@notificationBodyWithDoseAndProfile": {
+    "description": "Notification body with dose display and profile name.",
+    "placeholders": {
+      "medicationName": { "type": "String" },
+      "doseDisplay": { "type": "String" },
+      "profileName": { "type": "String" }
+    }
+  },
+
+  "scheduleSaved": "Horario guardado correctamente.",
+  "@scheduleSaved": { "description": "Success toast after creating a schedule without calendar sync." },
+
+  "scheduleSavedCalendarSync": "Horario guardado. Los eventos se sincronizarán con tu calendario.",
+  "@scheduleSavedCalendarSync": { "description": "Success toast after creating a schedule that will sync to a connected calendar." },
+
+  "scheduleSavedConnectCalendar": "Horario guardado. Recuerda vincular tu calendario en Configuración.",
+  "@scheduleSavedConnectCalendar": { "description": "Warning toast when a schedule requests calendar sync but no calendar is connected." },
+
+  "scheduleSavedConnectAction": "Conectar",
+  "@scheduleSavedConnectAction": { "description": "Action label on the connect-calendar warning toast." },
+
+  "reminderScheduledTitle": "Recordatorio programado",
+  "@reminderScheduledTitle": { "description": "Title of the test notification fired after saving a push-enabled schedule." },
+
+  "reminderScheduledBody": "Alarmas y notificaciones activas para {medicationName}.",
+  "@reminderScheduledBody": {
+    "description": "Body of the test notification fired after saving a push-enabled schedule.",
+    "placeholders": {
+      "medicationName": { "type": "String" }
+    }
+  },
+
+  "medicationFallbackName": "Medicamento",
+  "@medicationFallbackName": { "description": "Fallback medication name when the selected medication is missing from the local list." }
 }

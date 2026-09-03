@@ -53,9 +53,6 @@ class SyncedMedicationRepository implements MedicationRepository {
               action: 'CREATE',
               payloadJson: jsonEncode({
                 'name': value.name,
-                'dosage': value.category.isNotEmpty
-                    ? value.category
-                    : '1 dosis',
                 'instructions': value.notes,
                 'clientId': clientId,
                 'form': value.form.name,
@@ -90,9 +87,6 @@ class SyncedMedicationRepository implements MedicationRepository {
               action: 'UPDATE',
               payloadJson: jsonEncode({
                 'name': value.name,
-                'dosage': value.category.isNotEmpty
-                    ? value.category
-                    : '1 dosis',
                 'instructions': value.notes,
                 'form': value.form.name,
                 'colorToken': value.colorToken,

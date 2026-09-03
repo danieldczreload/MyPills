@@ -23,6 +23,12 @@ class DoseEventsTable extends Table {
 
   DateTimeColumn get takenAtUtc => dateTime().nullable()();
 
+  RealColumn get doseAmount => real().nullable()();
+
+  TextColumn get doseUnit => text().nullable()();
+
+  TextColumn get doseDisplay => text().nullable()();
+
   TextColumn get clientId => text().nullable()();
 
   TextColumn get profileId => text().withDefault(const Constant('default'))();

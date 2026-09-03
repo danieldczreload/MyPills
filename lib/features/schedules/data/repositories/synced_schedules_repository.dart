@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:my_pills/core/db/app_database.dart';
 import 'package:my_pills/core/result/result.dart';
 import 'package:my_pills/core/sync/sync_engine.dart';
+import 'package:my_pills/features/schedules/domain/entities/dose.dart';
 import 'package:my_pills/features/schedules/domain/entities/schedule.dart';
 import 'package:my_pills/features/schedules/domain/repositories/schedule_repository.dart';
 import 'package:uuid/uuid.dart';
@@ -63,6 +64,10 @@ class SyncedScheduleRepository implements ScheduleRepository {
         if (value.endDate != null)
           'endDate': value.endDate!.toUtc().toIso8601String(),
         'clientId': clientId,
+        if (value.dose != null) ...{
+          'doseAmount': canonicalizeDoseAmount(value.dose!.amount),
+          'doseUnit': value.dose!.unit,
+        },
       };
 
       value.map(

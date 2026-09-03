@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:my_pills/core/theme/serene_theme.dart';
 
@@ -16,6 +17,7 @@ class SoftInputField extends StatelessWidget {
     this.suffixIcon,
     this.prefixIcon,
     this.validator,
+    this.inputFormatters,
   });
 
   final String labelText;
@@ -29,6 +31,7 @@ class SoftInputField extends StatelessWidget {
   final Widget? suffixIcon;
   final Widget? prefixIcon;
   final String? Function(String?)? validator;
+  final List<TextInputFormatter>? inputFormatters;
 
   @override
   Widget build(BuildContext context) {
@@ -43,6 +46,7 @@ class SoftInputField extends StatelessWidget {
       onTap: onTap,
       onChanged: onChanged,
       validator: validator,
+      inputFormatters: inputFormatters,
       decoration: InputDecoration(
         labelText: labelText,
         hintText: hintText,

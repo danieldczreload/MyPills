@@ -82,17 +82,16 @@ class AppNotification extends StatelessWidget {
     String? actionLabel,
     VoidCallback? onAction,
     Duration duration = const Duration(seconds: 4),
-  }) =>
-      showWithMessenger(
-        ScaffoldMessenger.of(context),
-        context: context,
-        message: message,
-        tone: tone,
-        icon: icon,
-        actionLabel: actionLabel,
-        onAction: onAction,
-        duration: duration,
-      );
+  }) => showWithMessenger(
+    ScaffoldMessenger.of(context),
+    context: context,
+    message: message,
+    tone: tone,
+    icon: icon,
+    actionLabel: actionLabel,
+    onAction: onAction,
+    duration: duration,
+  );
 
   /// Shows a success notification (Sage green).
   static ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showSuccess(
@@ -102,16 +101,15 @@ class AppNotification extends StatelessWidget {
     String? actionLabel,
     VoidCallback? onAction,
     Duration duration = const Duration(seconds: 4),
-  }) =>
-      show(
-        context,
-        message,
-        tone: AppNotificationTone.success,
-        icon: icon,
-        actionLabel: actionLabel,
-        onAction: onAction,
-        duration: duration,
-      );
+  }) => show(
+    context,
+    message,
+    tone: AppNotificationTone.success,
+    icon: icon,
+    actionLabel: actionLabel,
+    onAction: onAction,
+    duration: duration,
+  );
 
   /// Shows an error notification (Red — system failures only).
   static ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showError(
@@ -121,16 +119,15 @@ class AppNotification extends StatelessWidget {
     String? actionLabel,
     VoidCallback? onAction,
     Duration duration = const Duration(seconds: 4),
-  }) =>
-      show(
-        context,
-        message,
-        tone: AppNotificationTone.error,
-        icon: icon,
-        actionLabel: actionLabel,
-        onAction: onAction,
-        duration: duration,
-      );
+  }) => show(
+    context,
+    message,
+    tone: AppNotificationTone.error,
+    icon: icon,
+    actionLabel: actionLabel,
+    onAction: onAction,
+    duration: duration,
+  );
 
   /// Shows a warning / pending notification (Amber).
   static ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showWarning(
@@ -140,16 +137,15 @@ class AppNotification extends StatelessWidget {
     String? actionLabel,
     VoidCallback? onAction,
     Duration duration = const Duration(seconds: 4),
-  }) =>
-      show(
-        context,
-        message,
-        tone: AppNotificationTone.warning,
-        icon: icon,
-        actionLabel: actionLabel,
-        onAction: onAction,
-        duration: duration,
-      );
+  }) => show(
+    context,
+    message,
+    tone: AppNotificationTone.warning,
+    icon: icon,
+    actionLabel: actionLabel,
+    onAction: onAction,
+    duration: duration,
+  );
 
   /// Shows an informative notification (Indigo).
   static ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showInfo(
@@ -159,19 +155,18 @@ class AppNotification extends StatelessWidget {
     String? actionLabel,
     VoidCallback? onAction,
     Duration duration = const Duration(seconds: 4),
-  }) =>
-      show(
-        context,
-        message,
-        icon: icon,
-        actionLabel: actionLabel,
-        onAction: onAction,
-        duration: duration,
-      );
+  }) => show(
+    context,
+    message,
+    icon: icon,
+    actionLabel: actionLabel,
+    onAction: onAction,
+    duration: duration,
+  );
 
   /// Shows a notification with an explicit [ScaffoldMessengerState].
   static ScaffoldFeatureController<SnackBar, SnackBarClosedReason>
-      showWithMessenger(
+  showWithMessenger(
     ScaffoldMessengerState messenger, {
     required BuildContext context,
     required String message,

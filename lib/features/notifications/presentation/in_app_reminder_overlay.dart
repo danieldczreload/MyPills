@@ -5,8 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:my_pills/app/router.dart';
 import 'package:my_pills/core/theme/serene_theme.dart';
-import 'package:my_pills/features/medications/domain/entities/medication.dart';
-import 'package:my_pills/features/medications/presentation/providers/medications_providers.dart';
+import 'package:my_pills/features/notifications/domain/entities/in_app_banner.dart';
 import 'package:my_pills/features/notifications/presentation/providers/notification_providers.dart';
 import 'package:my_pills/features/profile/presentation/providers/profile_providers.dart';
 import 'package:my_pills/l10n/app_localizations.dart';
@@ -70,8 +69,8 @@ class _InAppReminderOverlayState extends ConsumerState<InAppReminderOverlay>
   }
 
   void _showOverlay(
-    BuildContext context,
-    String medicationName, {
+    BuildContext context, {
+    required InAppBanner banner,
     String? profileName,
     required VoidCallback onDismiss,
   }) {
@@ -158,13 +157,11 @@ class _InAppReminderOverlayState extends ConsumerState<InAppReminderOverlay>
                                         ),
                                   ),
                                   Text(
-                                    profileName != null &&
-                                            profileName.isNotEmpty
-                                        ? l10n.notificationBodyWithProfile(
-                                            medicationName,
-                                            profileName,
-                                          )
-                                        : l10n.notificationBody(medicationName),
+                                    doseReminderBannerBody(
+                                      l10n,
+                                      banner: banner,
+                                      profileName: profileName,
+                                    ),
                                     style: theme.textTheme.bodyMedium?.copyWith(
                                       color: colorScheme.onSurfaceVariant,
                                     ),
@@ -201,40 +198,18 @@ class _InAppReminderOverlayState extends ConsumerState<InAppReminderOverlay>
 
   @override
   Widget build(BuildContext context) {
-    // Listen to the reminder stream
-    ref.listen(inAppRemindersStreamProvider, (previous, next) async {
-      final dose = next.value;
-      if (dose == null) return;
+    ref.listen(inAppBannersStreamProvider, (previous, next) {
+      final banner = next.value;
+      if (banner == null) return;
 
       final prefs = ref.read(notificationPreferencesProvider);
       if (!prefs.inAppBannersEnabled) return;
 
-      final medsResult = await ref.read(medicationsStreamProvider.future);
-      String medName = "Medicamento";
-      if (medsResult.isSuccess) {
-        final med = medsResult.valueOrNull?.firstWhere(
-          (m) => m.id == dose.medicationId,
-          orElse: () => const Medication(
-            id: 0,
-            name: '',
-            form: MedicationForm.pill,
-            category: '',
-            colorToken: '',
-          ),
-        );
-        if (med != null && med.name.isNotEmpty) {
-          medName = med.name;
-        }
-      }
-
-      final currentProfile = ref.read(currentUserProfileProvider);
-      final profileName = currentProfile?.name;
-
       if (mounted) {
         _showOverlay(
           context,
-          medName,
-          profileName: profileName,
+          banner: banner,
+          profileName: ref.read(currentUserProfileProvider)?.name,
           onDismiss: () {
             _animationController.reverse().then((_) {
               if (mounted) {
@@ -248,4 +223,30 @@ class _InAppReminderOverlayState extends ConsumerState<InAppReminderOverlay>
 
     return widget.child;
   }
+}
+
+String doseReminderBannerBody(
+  AppLocalizations l10n, {
+  required InAppBanner banner,
+  String? profileName,
+}) {
+  final display = banner.doseDisplay?.trim() ?? '';
+  final hasProfile = profileName != null && profileName.isNotEmpty;
+  if (display.isNotEmpty && hasProfile) {
+    return l10n.notificationBodyWithDoseAndProfile(
+      banner.medicationName,
+      display,
+      profileName,
+    );
+  }
+  if (display.isNotEmpty) {
+    return l10n.notificationBodyWithDose(banner.medicationName, display);
+  }
+  if (hasProfile) {
+    return l10n.notificationBodyWithProfile(
+      banner.medicationName,
+      profileName,
+    );
+  }
+  return l10n.notificationBody(banner.medicationName);
 }

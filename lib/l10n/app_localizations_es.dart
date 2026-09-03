@@ -660,4 +660,65 @@ class AppLocalizationsEs extends AppLocalizations {
   String notificationBodyWithProfile(String medication, String profileName) {
     return 'Es hora de tomar $medication ($profileName)';
   }
+
+  @override
+  String get doseSectionTitle => 'Dosis';
+
+  @override
+  String get doseSectionSubtitle => 'Cuánto tomar en cada recordatorio';
+
+  @override
+  String get doseAmountLabel => 'Cantidad';
+
+  @override
+  String get doseUnitLabel => 'Unidad';
+
+  @override
+  String get errorDoseRequired => 'Indica la cantidad y la unidad de la dosis';
+
+  @override
+  String get errorInvalidDoseAmount =>
+      'La cantidad debe ser mayor a 0 y tener como máximo 4 decimales';
+
+  @override
+  String get errorInvalidDoseUnit => 'Selecciona una unidad de dosis';
+
+  @override
+  String notificationBodyWithDose(String medicationName, String doseDisplay) {
+    return 'Es hora de tomar $medicationName ($doseDisplay)';
+  }
+
+  @override
+  String notificationBodyWithDoseAndProfile(
+    String medicationName,
+    String doseDisplay,
+    String profileName,
+  ) {
+    return 'Es hora de tomar $medicationName ($doseDisplay) — $profileName';
+  }
+
+  @override
+  String get scheduleSaved => 'Horario guardado correctamente.';
+
+  @override
+  String get scheduleSavedCalendarSync =>
+      'Horario guardado. Los eventos se sincronizarán con tu calendario.';
+
+  @override
+  String get scheduleSavedConnectCalendar =>
+      'Horario guardado. Recuerda vincular tu calendario en Configuración.';
+
+  @override
+  String get scheduleSavedConnectAction => 'Conectar';
+
+  @override
+  String get reminderScheduledTitle => 'Recordatorio programado';
+
+  @override
+  String reminderScheduledBody(String medicationName) {
+    return 'Alarmas y notificaciones activas para $medicationName.';
+  }
+
+  @override
+  String get medicationFallbackName => 'Medicamento';
 }

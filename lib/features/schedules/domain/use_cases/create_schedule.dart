@@ -1,5 +1,6 @@
 import 'package:my_pills/core/errors/failure.dart';
 import 'package:my_pills/core/result/result.dart';
+import 'package:my_pills/features/schedules/domain/entities/dose.dart';
 import 'package:my_pills/features/schedules/domain/entities/schedule.dart';
 import 'package:my_pills/features/schedules/domain/repositories/schedule_repository.dart';
 import 'package:my_pills/features/schedules/domain/services/dose_reconciler.dart';
@@ -58,6 +59,12 @@ class CreateSchedule {
     if (failure != null) {
       return Result.failure(failure);
     }
+
+    final doseFailure = validateDose(schedule.dose);
+    if (doseFailure != null) {
+      return Result.failure(doseFailure);
+    }
+
     final created = await _repository.create(schedule);
     if (created case FailureResult()) {
       return created;

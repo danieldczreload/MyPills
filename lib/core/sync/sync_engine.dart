@@ -5,6 +5,8 @@ import 'package:my_pills/core/db/app_database.dart';
 import 'package:my_pills/core/errors/failure.dart';
 import 'package:my_pills/core/network/api_client.dart';
 import 'package:my_pills/core/result/result.dart';
+import 'package:my_pills/features/schedules/data/mappers/dose_mapper.dart';
+import 'package:my_pills/features/schedules/domain/entities/dose.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Offline-first synchronization engine handling delta sync and outbox queue.
@@ -324,6 +326,7 @@ class SyncEngine {
             final serverUpdatedAt = serverUpdatedAtStr != null
                 ? DateTime.tryParse(serverUpdatedAtStr)
                 : null;
+            final serverDose = DoseFields.of(parseDose(response.data!['dose']));
             if (serverId != null) {
               await (_db.update(
                 _db.schedulesTable,
@@ -332,6 +335,9 @@ class SyncEngine {
                   serverId: Value(serverId),
                   serverUpdatedAt: Value(serverUpdatedAt),
                   syncStatus: const Value('synced'),
+                  doseAmount: serverDose.amountValue,
+                  doseUnit: serverDose.unitValue,
+                  doseDisplay: serverDose.displayValue,
                 ),
               );
             }
@@ -519,7 +525,6 @@ class SyncEngine {
     final serverId = json['id']?.toString();
     final clientId = json['clientId'] as String? ?? serverId;
     final name = json['name'] as String? ?? 'Desconocido';
-    final dosage = json['dosage'] as String? ?? '';
     final instructions = json['instructions'] as String?;
     final form = json['form'] as String? ?? 'pill';
     final colorToken = json['colorToken'] as String? ?? 'sky';
@@ -565,7 +570,7 @@ class SyncEngine {
             MedicationsTableCompanion.insert(
               name: name,
               form: form,
-              category: dosage.isNotEmpty ? dosage : 'General',
+              category: 'General',
               colorToken: colorToken,
               notes: Value(instructions),
               clientId: Value(clientId),
@@ -641,6 +646,7 @@ class SyncEngine {
     }
 
     final medicationId = localMed.id;
+    final dose = DoseFields.of(parseDose(json['dose']));
 
     SchedulesTableData? existing;
     if (serverId != null) {
@@ -664,6 +670,9 @@ class SyncEngine {
           ruleJson: Value(ruleJson),
           startDateUtc: Value(startDateUtc),
           endDateUtc: Value(endDateUtc),
+          doseAmount: dose.amountValue,
+          doseUnit: dose.unitValue,
+          doseDisplay: dose.displayValue,
           serverId: Value(serverId),
           clientId: Value(clientId),
           profileId: Value(profileId),
@@ -682,6 +691,9 @@ class SyncEngine {
               ruleJson: ruleJson,
               startDateUtc: startDateUtc,
               endDateUtc: Value(endDateUtc),
+              doseAmount: dose.amountValue,
+              doseUnit: dose.unitValue,
+              doseDisplay: dose.displayValue,
               clientId: Value(clientId),
               serverId: Value(serverId),
               profileId: Value(profileId),
@@ -745,6 +757,7 @@ class SyncEngine {
 
     final scheduleId = localSchedule.id;
     final medicationId = localMedication?.id ?? localSchedule.medicationId;
+    final dose = DoseFields.of(parseDose(json['dose']));
 
     DoseEventsTableData? existing;
     if (serverId != null) {
@@ -757,7 +770,7 @@ class SyncEngine {
         _db.doseEventsTable,
       )..where((t) => t.clientId.equals(clientId))).getSingleOrNull();
     }
-    if (existing == null && localSchedule != null) {
+    if (existing == null) {
       existing =
           await (_db.select(_db.doseEventsTable)..where(
                 (t) =>
@@ -777,6 +790,9 @@ class SyncEngine {
           scheduledAtUtc: Value(scheduledAtUtc),
           status: Value(status),
           takenAtUtc: Value(takenAtUtc),
+          doseAmount: dose.amountValue,
+          doseUnit: dose.unitValue,
+          doseDisplay: dose.displayValue,
           serverId: Value(serverId),
           clientId: Value(clientId),
           profileId: Value(profileId),
@@ -795,6 +811,9 @@ class SyncEngine {
               scheduledAtUtc: scheduledAtUtc,
               status: status,
               takenAtUtc: Value(takenAtUtc),
+              doseAmount: dose.amountValue,
+              doseUnit: dose.unitValue,
+              doseDisplay: dose.displayValue,
               clientId: Value(clientId),
               serverId: Value(serverId),
               profileId: Value(profileId),

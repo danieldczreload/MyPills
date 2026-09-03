@@ -21,9 +21,12 @@ import 'package:my_pills/features/notifications/data/services/fcm_device_service
 import 'package:my_pills/features/notifications/domain/use_cases/sync_notifications.dart';
 import 'package:my_pills/features/notifications/presentation/providers/notification_providers.dart';
 import 'package:my_pills/features/profile/presentation/providers/profile_providers.dart';
+import 'package:my_pills/features/schedules/data/repositories/cached_dose_unit_repository.dart';
 import 'package:my_pills/features/schedules/data/repositories/drift_schedule_repository.dart';
 import 'package:my_pills/features/schedules/data/repositories/synced_schedules_repository.dart';
+import 'package:my_pills/features/schedules/domain/entities/dose_unit.dart';
 import 'package:my_pills/features/schedules/domain/entities/schedule.dart';
+import 'package:my_pills/features/schedules/domain/repositories/dose_unit_repository.dart';
 import 'package:my_pills/features/schedules/domain/repositories/schedule_repository.dart';
 import 'package:my_pills/features/schedules/domain/services/dose_reconciler.dart';
 import 'package:my_pills/features/schedules/domain/services/schedule_expander.dart';
@@ -92,6 +95,18 @@ final fcmDeviceServiceProvider = Provider<FcmDeviceService>((ref) {
   );
 });
 
+final doseUnitRepositoryProvider = Provider<DoseUnitRepository>((ref) {
+  return CachedDoseUnitRepository(
+    apiClient: ref.watch(apiClientProvider),
+    prefs: ref.watch(sharedPreferencesProvider),
+  );
+});
+
+final doseUnitsProvider = FutureProvider<List<DoseUnit>>((ref) async {
+  final result = await ref.watch(doseUnitRepositoryProvider).getAll();
+  return result.valueOrNull ?? [];
+});
+
 final pkceCalendarServiceProvider = Provider<PkceCalendarService>((ref) {
   return PkceCalendarService(
     ref.watch(apiClientProvider),
@@ -125,20 +140,24 @@ MedicationRepository medicationRepository(Ref ref) {
   );
 }
 
+/// Profile-scoped [ScheduleRepository]. [scheduleRepositoryProvider] is the
+/// current-profile view of this family.
+final scheduleRepositoryForProfileProvider =
+    Provider.family<ScheduleRepository, String>((ref, profileId) {
+      final db = ref.watch(databaseProvider);
+      return SyncedScheduleRepository(
+        localRepo: DriftScheduleRepository(db, profileId: profileId),
+        db: db,
+        syncEngine: ref.watch(syncEngineProvider),
+        profileId: profileId,
+      );
+    });
+
 /// Provides [ScheduleRepository] backed by Drift + Offline-First Sync.
 @Riverpod(keepAlive: true)
 ScheduleRepository scheduleRepository(Ref ref) {
-  final db = ref.watch(databaseProvider);
-  final profile = ref.watch(currentUserProfileProvider);
-  final profileId = profile?.id ?? 'default';
-  final localRepo = DriftScheduleRepository(db, profileId: profileId);
-  final syncEngine = ref.watch(syncEngineProvider);
-  return SyncedScheduleRepository(
-    localRepo: localRepo,
-    db: db,
-    syncEngine: syncEngine,
-    profileId: profileId,
-  );
+  final profileId = ref.watch(currentUserProfileProvider)?.id ?? 'default';
+  return ref.watch(scheduleRepositoryForProfileProvider(profileId));
 }
 
 /// Provides [DoseEventRepository] backed by Drift + Offline-First Sync.
@@ -261,10 +280,25 @@ final deleteMedicationUseCaseProvider = Provider<DeleteMedication>((ref) {
   );
 });
 
-final createScheduleUseCaseProvider = Provider<CreateSchedule>((ref) {
+final createScheduleUseCaseProvider = Provider.family<CreateSchedule, String>((
+  ref,
+  profileId,
+) {
+  final db = ref.watch(databaseProvider);
   return CreateSchedule(
-    ref.watch(scheduleRepositoryProvider),
-    reconciler: ref.watch(doseReconcilerProvider),
+    ref.watch(scheduleRepositoryForProfileProvider(profileId)),
+    reconciler: DoseReconciler(
+      scheduleRepository: ref.watch(
+        scheduleRepositoryForProfileProvider(profileId),
+      ),
+      doseEventRepository: DriftDoseEventRepository(
+        db,
+        profileId: profileId,
+      ),
+      expander: ref.watch(scheduleExpanderProvider),
+      clock: () => ref.read(clockProvider),
+      onReconciled: () => ref.read(syncNotificationsUseCaseProvider).call(),
+    ),
   );
 });
 

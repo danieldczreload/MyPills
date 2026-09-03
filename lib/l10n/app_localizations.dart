@@ -1257,6 +1257,106 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Es hora de tomar {medication} ({profileName})'**
   String notificationBodyWithProfile(String medication, String profileName);
+
+  /// Section title for dose amount + unit on the schedule form.
+  ///
+  /// In es, this message translates to:
+  /// **'Dosis'**
+  String get doseSectionTitle;
+
+  /// Helper text under the dose section on the schedule form.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuánto tomar en cada recordatorio'**
+  String get doseSectionSubtitle;
+
+  /// Input label for numeric dose amount.
+  ///
+  /// In es, this message translates to:
+  /// **'Cantidad'**
+  String get doseAmountLabel;
+
+  /// Input label for dose unit picker.
+  ///
+  /// In es, this message translates to:
+  /// **'Unidad'**
+  String get doseUnitLabel;
+
+  /// Validation error when creating a schedule without dose amount/unit.
+  ///
+  /// In es, this message translates to:
+  /// **'Indica la cantidad y la unidad de la dosis'**
+  String get errorDoseRequired;
+
+  /// Validation error for non-positive or over-precise dose amount.
+  ///
+  /// In es, this message translates to:
+  /// **'La cantidad debe ser mayor a 0 y tener como máximo 4 decimales'**
+  String get errorInvalidDoseAmount;
+
+  /// Validation error when dose unit is missing.
+  ///
+  /// In es, this message translates to:
+  /// **'Selecciona una unidad de dosis'**
+  String get errorInvalidDoseUnit;
+
+  /// Notification body including the server-formatted dose display.
+  ///
+  /// In es, this message translates to:
+  /// **'Es hora de tomar {medicationName} ({doseDisplay})'**
+  String notificationBodyWithDose(String medicationName, String doseDisplay);
+
+  /// Notification body with dose display and profile name.
+  ///
+  /// In es, this message translates to:
+  /// **'Es hora de tomar {medicationName} ({doseDisplay}) — {profileName}'**
+  String notificationBodyWithDoseAndProfile(
+    String medicationName,
+    String doseDisplay,
+    String profileName,
+  );
+
+  /// Success toast after creating a schedule without calendar sync.
+  ///
+  /// In es, this message translates to:
+  /// **'Horario guardado correctamente.'**
+  String get scheduleSaved;
+
+  /// Success toast after creating a schedule that will sync to a connected calendar.
+  ///
+  /// In es, this message translates to:
+  /// **'Horario guardado. Los eventos se sincronizarán con tu calendario.'**
+  String get scheduleSavedCalendarSync;
+
+  /// Warning toast when a schedule requests calendar sync but no calendar is connected.
+  ///
+  /// In es, this message translates to:
+  /// **'Horario guardado. Recuerda vincular tu calendario en Configuración.'**
+  String get scheduleSavedConnectCalendar;
+
+  /// Action label on the connect-calendar warning toast.
+  ///
+  /// In es, this message translates to:
+  /// **'Conectar'**
+  String get scheduleSavedConnectAction;
+
+  /// Title of the test notification fired after saving a push-enabled schedule.
+  ///
+  /// In es, this message translates to:
+  /// **'Recordatorio programado'**
+  String get reminderScheduledTitle;
+
+  /// Body of the test notification fired after saving a push-enabled schedule.
+  ///
+  /// In es, this message translates to:
+  /// **'Alarmas y notificaciones activas para {medicationName}.'**
+  String reminderScheduledBody(String medicationName);
+
+  /// Fallback medication name when the selected medication is missing from the local list.
+  ///
+  /// In es, this message translates to:
+  /// **'Medicamento'**
+  String get medicationFallbackName;
 }
 
 class _AppLocalizationsDelegate

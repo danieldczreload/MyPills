@@ -48,10 +48,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _hasNotificationPermission = status.isGranted;
     });
     if (status.isGranted) {
-      final battery = await Permission.ignoreBatteryOptimizations.status;
-      if (!battery.isGranted) {
-        await Permission.ignoreBatteryOptimizations.request();
-      }
       await ref
           .read(notificationPreferencesProvider.notifier)
           .updatePreferences(
@@ -228,28 +224,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             AppNotification.showSuccess(
                               context,
                               'Notificación de prueba enviada',
-                            );
-                          }
-                        },
-                      ),
-                      SizedBox(height: sereneTheme.spacing.xs),
-                      OutlinedButton.icon(
-                        icon: const Icon(Icons.timer_outlined, size: 18),
-                        label: const Text('Probar alarma en 10 segundos'),
-                        onPressed: () async {
-                          await ref
-                              .read(notificationSchedulerProvider)
-                              .scheduleTestIn(
-                                delay: const Duration(seconds: 10),
-                                title: '⏰ Recordatorio de prueba (10s)',
-                                body:
-                                    'Es hora de tomar tu medicamento (prueba).',
-                              );
-                          if (context.mounted) {
-                            AppNotification.showSuccess(
-                              context,
-                              'Alarma programada en 10 segundos. '
-                              'Puedes bloquear la pantalla para probar.',
                             );
                           }
                         },

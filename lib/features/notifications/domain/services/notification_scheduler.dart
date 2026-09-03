@@ -31,13 +31,4 @@ abstract class NotificationScheduler {
   /// to verify channel + permissions end-to-end. Throws on failure so the UI
   /// can surface the error.
   Future<void> showTest({required String title, required String body});
-
-  /// Diagnostics: schedule a notification [delay] from now using the same
-  /// `zonedSchedule` path as real doses. Lets us isolate scheduler/timezone
-  /// bugs from the sync use case. Throws on failure.
-  Future<void> scheduleTestIn({
-    required Duration delay,
-    required String title,
-    required String body,
-  });
 }

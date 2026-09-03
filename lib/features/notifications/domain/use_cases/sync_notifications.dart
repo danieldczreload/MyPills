@@ -3,6 +3,7 @@ import 'package:my_pills/core/utils/clock.dart';
 import 'package:my_pills/core/utils/log.dart';
 import 'package:my_pills/features/medications/domain/entities/medication.dart';
 import 'package:my_pills/features/medications/domain/repositories/medication_repository.dart';
+import 'package:my_pills/features/notifications/domain/dose_reminder_copy.dart';
 import 'package:my_pills/features/notifications/domain/entities/notification_preferences.dart';
 import 'package:my_pills/features/notifications/domain/repositories/notification_preferences_repository.dart';
 import 'package:my_pills/features/notifications/domain/services/notification_scheduler.dart';
@@ -147,7 +148,10 @@ class SyncNotifications {
         },
         bodyBuilder: (dose) {
           final med = medMap[dose.medicationId] ?? fallbackMed;
-          return 'Es hora de tomar tu dosis de ${med.name}';
+          return formatDoseReminderBody(
+            medicationName: med.name,
+            doseDisplay: dose.dose?.display,
+          );
         },
       );
       report.pushScheduled = pushDoses.length;

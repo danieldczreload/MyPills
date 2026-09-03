@@ -28,13 +28,16 @@ The client must route push notification tap payloads to target screens.
 - **WHEN** user taps a received push notification containing payload:
   ```json
   {
-    "kind": "dose_reminder",
-    "profileId": "uuid-string",
-    "medicationId": "uuid-string",
-    "doseEventId": "uuid-string"
+    "type": "dose_reminder",
+    "doseEventId": "uuid-string",
+    "medicationName": "Amoxicilina",
+    "doseDisplay": "500 mg",
+    "doseAmount": "500",
+    "doseUnit": "mg"
   }
   ```
-- **THEN** app parses payload and navigates directly to the corresponding profile or dose event screen via `go_router`.
+- **THEN** app parses payload and navigates to `/today`
+- **AND** in-app banner body uses `doseDisplay` (fallback `dosage` for legacy pushes).
 
 ### Requirement: Diagnostic Test Push Endpoint
 The client must support triggering diagnostic test notifications for QA.
@@ -43,12 +46,4 @@ The client must support triggering diagnostic test notifications for QA.
 - **WHEN** user triggers a test push in diagnostics settings
 - **THEN** client sends `POST /api/v1/notifications/test-push` with body `{ "title": "Test", "body": "Delivery check" }`
 - **AND** expects `200 OK` response `{ "sent": int, "failed": 0 }`.
-
-### Requirement: OEM Battery Optimization Handling
-The client must prompt OEM Android devices (Xiaomi, Huawei, Oppo, Vivo, OnePlus) to disable aggressive battery optimization.
-
-#### Scenario: OEM battery optimization dialog prompt
-- **GIVEN** an Android device from an OEM family requiring manual setup (Xiaomi, Huawei, Oppo, Vivo, OnePlus)
-- **WHEN** push notification permissions are configured
-- **THEN** client invokes `maybeShowOemSetup` to present device-tailored step-by-step instructions.
 

@@ -8,9 +8,6 @@ const String kMedicationChannelName = 'Recordatorios de medicación';
 const String kMedicationChannelDescription =
     'Avisos para la toma de medicamentos';
 
-/// Whether the device can fire exact alarms. Cached after [initNotifications].
-bool exactAlarmsAllowed = false;
-
 const AndroidNotificationChannel _medicationChannel =
     AndroidNotificationChannel(
       kMedicationChannelId,
@@ -57,25 +54,6 @@ Future<FlutterLocalNotificationsPlugin> initNotifications() async {
       mlog('mypills.notif', 'requestNotificationsPermission -> $granted');
     } catch (e) {
       mlog('mypills.notif', 'requestNotificationsPermission failed: $e');
-    }
-
-    try {
-      final exact = await android.requestExactAlarmsPermission();
-      mlog('mypills.notif', 'requestExactAlarmsPermission -> $exact');
-    } catch (e) {
-      mlog('mypills.notif', 'requestExactAlarmsPermission failed: $e');
-    }
-
-    try {
-      exactAlarmsAllowed =
-          await android.canScheduleExactNotifications() ?? false;
-      mlog(
-        'mypills.notif',
-        'canScheduleExactNotifications -> $exactAlarmsAllowed',
-      );
-    } catch (e) {
-      mlog('mypills.notif', 'canScheduleExactNotifications failed: $e');
-      exactAlarmsAllowed = false;
     }
   }
 

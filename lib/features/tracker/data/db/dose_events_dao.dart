@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:my_pills/core/db/app_database.dart';
+import 'package:my_pills/features/schedules/data/mappers/dose_mapper.dart';
 import 'package:my_pills/features/tracker/data/db/dose_events_table.dart';
 import 'package:uuid/uuid.dart';
 
@@ -118,6 +119,15 @@ class DoseEventsDao extends DatabaseAccessor<AppDatabase>
           .map((row) => row.scheduledAtUtc.millisecondsSinceEpoch)
           .toSet();
 
+      final scheduleRow = await (select(
+        schedulesTable,
+      )..where((t) => t.id.equals(scheduleId))).getSingleOrNull();
+      final dose = DoseFields(
+        amount: scheduleRow?.doseAmount,
+        unit: scheduleRow?.doseUnit,
+        display: scheduleRow?.doseDisplay,
+      );
+
       for (final scheduledAt in expectedScheduledAtUtc) {
         final key = scheduledAt.millisecondsSinceEpoch;
         if (!allExistingMs.contains(key)) {
@@ -127,6 +137,9 @@ class DoseEventsDao extends DatabaseAccessor<AppDatabase>
               scheduleId: scheduleId,
               scheduledAtUtc: scheduledAt,
               status: 'pending',
+              doseAmount: dose.amountValue,
+              doseUnit: dose.unitValue,
+              doseDisplay: dose.displayValue,
               profileId: Value(profileId ?? 'default'),
               clientId: Value(const Uuid().v4()),
             ),
@@ -144,6 +157,16 @@ class DoseEventsDao extends DatabaseAccessor<AppDatabase>
           await (delete(
             doseEventsTable,
           )..where((t) => t.id.equals(row.id))).go();
+        } else if (row.doseAmount == null && dose.amount != null) {
+          await (update(
+            doseEventsTable,
+          )..where((t) => t.id.equals(row.id))).write(
+            DoseEventsTableCompanion(
+              doseAmount: dose.amountValue,
+              doseUnit: dose.unitValue,
+              doseDisplay: dose.displayValue,
+            ),
+          );
         }
       }
     });

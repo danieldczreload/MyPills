@@ -8,6 +8,7 @@ import 'package:my_pills/core/result/result.dart';
 import 'package:my_pills/core/theme/app_theme.dart';
 import 'package:my_pills/features/medications/domain/entities/medication.dart';
 import 'package:my_pills/features/medications/presentation/providers/medications_providers.dart';
+import 'package:my_pills/features/schedules/domain/entities/dose.dart';
 import 'package:my_pills/features/schedules/domain/use_cases/cancel_recurring_notifications.dart';
 import 'package:my_pills/features/timeline/presentation/providers/timeline_providers.dart';
 import 'package:my_pills/features/tracker/domain/entities/dose_event.dart';
@@ -109,6 +110,7 @@ void main() {
           scheduleId: 100,
           scheduledAt: DateTime(2024, 6, 15, 8),
           status: DoseStatus.pending,
+          dose: const Dose(amount: 400, unit: 'mg', display: '400 mg'),
         ),
       ];
       final medications = [
@@ -126,7 +128,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Paracetamol'), findsOneWidget);
+      expect(find.text('Paracetamol · 400 mg'), findsOneWidget);
       expect(find.text('Próximo • 8:00 AM'), findsOneWidget);
       expect(find.text('Registrar como tomado'), findsOneWidget);
     });

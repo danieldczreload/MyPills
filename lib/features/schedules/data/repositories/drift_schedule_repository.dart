@@ -84,10 +84,17 @@ class DriftScheduleRepository implements ScheduleRepository {
   @override
   Future<Result<Schedule>> create(Schedule schedule) async {
     try {
-      final id = await _dao.insertSchedule(
-        toScheduleInsertCompanion(schedule, profileId: _profileId),
-      );
-      final row = await _dao.getScheduleById(id);
+      final row = await _db.transaction(() async {
+        final id = await _dao.insertSchedule(
+          toScheduleInsertCompanion(schedule, profileId: _profileId),
+        );
+        await (_db.update(
+          _db.medicationsTable,
+        )..where((t) => t.id.equals(schedule.medicationId))).write(
+          MedicationsTableCompanion(profileId: Value(_profileId)),
+        );
+        return _dao.getScheduleById(id);
+      });
       if (row == null) {
         return Result.failure(
           Failure.unexpected(error: StateError('Inserted schedule not found')),

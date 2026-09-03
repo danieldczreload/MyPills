@@ -3,10 +3,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:my_pills/core/utils/log.dart';
 
+import 'package:my_pills/features/notifications/domain/entities/in_app_banner.dart';
 import 'package:my_pills/features/tracker/domain/entities/dose_event.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Emits [DoseEvent]s that are due for an in-app reminder.
+/// Emits [InAppBanner]s that are due for an in-app reminder.
 ///
 /// Fires when `now` is between (scheduledAt - minutesBefore) and (scheduledAt + 1h).
 /// Already-notified dose IDs are persisted per-day so the user is not
@@ -17,10 +18,12 @@ class InAppReminderService {
     required DateTime Function() clock,
     required SharedPreferences prefs,
     required int Function() minutesBefore,
+    required String Function(int medicationId) medicationNameOf,
   }) : _todayDosesStream = todayDosesStream,
        _clock = clock,
        _prefs = prefs,
-       _minutesBefore = minutesBefore {
+       _minutesBefore = minutesBefore,
+       _medicationNameOf = medicationNameOf {
     _restoreNotifiedIds();
     _init();
   }
@@ -29,17 +32,18 @@ class InAppReminderService {
   final DateTime Function() _clock;
   final SharedPreferences _prefs;
   final int Function() _minutesBefore;
+  final String Function(int medicationId) _medicationNameOf;
 
   static const String _prefsPrefix = 'mypills.reminded_doses_';
   static const Duration _checkInterval = Duration(seconds: 30);
   static const Duration _maxLateness = Duration(hours: 1);
 
   // Single-subscriber stream — buffers emissions until the StreamProvider
-  // (in `inAppRemindersStreamProvider`) attaches its listener. A broadcast
-  // stream would drop events fired before the first listener arrives, which
-  // happens routinely during app boot when a dose is already in-window.
-  final _reminderController = StreamController<DoseEvent>();
-  Stream<DoseEvent> get reminders => _reminderController.stream;
+  // attaches its listener. A broadcast stream would drop events fired before
+  // the first listener arrives, which happens during boot when a dose is
+  // already in-window.
+  final _bannerController = StreamController<InAppBanner>();
+  Stream<InAppBanner> get banners => _bannerController.stream;
 
   StreamSubscription<List<DoseEvent>>? _dosesSubscription;
   Timer? _timer;
@@ -144,18 +148,20 @@ class InAppReminderService {
     _checkReminders();
   }
 
-  /// Diagnostics: synthetically push a reminder through the stream so the UI
-  /// rendering path can be exercised without waiting for a real dose.
+  void showBanner(InAppBanner banner) {
+    _bannerController.add(banner);
+  }
+
+  void markNotified(int doseId) {
+    if (_notifiedDoseIds.add(doseId)) {
+      unawaited(_persistNotifiedIds());
+    }
+  }
+
   void fireDiagnosticTest() {
     mlog('mypills.inapp', 'fireDiagnosticTest');
-    _reminderController.add(
-      DoseEvent(
-        id: -1,
-        medicationId: 0,
-        scheduleId: 0,
-        scheduledAt: _clock(),
-        status: DoseStatus.pending,
-      ),
+    _bannerController.add(
+      const InAppBanner(medicationName: 'Medicación'),
     );
   }
 
@@ -199,7 +205,12 @@ class InAppReminderService {
         _notifiedDoseIds.add(dose.id);
         fired.add(dose.id);
         firedToday++;
-        _reminderController.add(dose);
+        _bannerController.add(
+          InAppBanner(
+            medicationName: _medicationNameOf(dose.medicationId),
+            doseDisplay: dose.dose?.display,
+          ),
+        );
       }
     }
 
@@ -211,6 +222,6 @@ class InAppReminderService {
   void dispose() {
     _dosesSubscription?.cancel();
     _timer?.cancel();
-    _reminderController.close();
+    _bannerController.close();
   }
 }

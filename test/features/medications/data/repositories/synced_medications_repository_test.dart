@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -98,6 +100,11 @@ void main() {
       expect(outboxItems.first.entityType, equals('medication'));
       expect(outboxItems.first.action, equals('CREATE'));
       expect(outboxItems.first.profileId, equals('profile-123'));
+      final payload =
+          jsonDecode(outboxItems.first.payloadJson) as Map<String, dynamic>;
+      expect(payload.containsKey('dosage'), isFalse);
+      expect(payload['name'], 'Paracetamol');
+      expect(payload['clientId'], outboxItems.first.clientId);
       verify(() => mockSyncEngine.flushOutbox()).called(1);
     });
 

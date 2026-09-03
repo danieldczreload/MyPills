@@ -14,6 +14,8 @@ The client must support creating daily, interval, and specific-days intake sched
     "medicationId": "uuid-string",
     "type": "daily",
     "startDate": "2026-08-01",
+    "doseAmount": 400,
+    "doseUnit": "mg",
     "timesOfDay": [
       { "hour": 8, "minute": 0 },
       { "hour": 20, "minute": 30 }
@@ -21,6 +23,7 @@ The client must support creating daily, interval, and specific-days intake sched
     "clientId": "uuid-v4-string"
   }
   ```
+- **AND** `doseAmount` is a JSON number > 0 (max 4 decimal places) and `doseUnit` is a catalog `code` from `GET /api/v1/dose-units`.
 
 #### Scenario: Creating hourly interval schedule
 - **WHEN** user configures an interval schedule (e.g. every 6 hours)

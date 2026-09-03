@@ -11,12 +11,10 @@ import 'package:my_pills/app/router.dart';
 import 'package:my_pills/core/config/env_config.dart';
 import 'package:my_pills/core/theme/app_theme.dart';
 import 'package:my_pills/core/utils/log.dart';
-import 'package:my_pills/features/notifications/data/services/device_info.dart';
 import 'package:my_pills/features/notifications/data/services/notification_init.dart';
+import 'package:my_pills/features/notifications/presentation/foreground_push_handler.dart';
 import 'package:my_pills/features/notifications/presentation/in_app_reminder_overlay.dart';
-import 'package:my_pills/features/notifications/presentation/oem_setup_dialog.dart';
 import 'package:my_pills/features/notifications/presentation/providers/notification_providers.dart';
-import 'package:my_pills/features/profile/presentation/providers/profile_providers.dart';
 import 'package:my_pills/l10n/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
@@ -125,51 +123,7 @@ class _MyPillsBootstrapState extends ConsumerState<MyPillsBootstrap>
       final fcmService = ref.read(fcmDeviceServiceProvider);
       unawaited(
         fcmService.initialize(
-          onForegroundMessage: (message) async {
-            mlog('mypills.fcm', 'Foreground push received: ${message.data}');
-            final data = message.data;
-            final action = data['action'] ?? data['type'];
-            if (action == 'cancel' ||
-                action == 'cancel_notification' ||
-                action == 'dose_cancelled' ||
-                data.containsKey('cancelDoseEventId')) {
-              final doseIdStr =
-                  data['doseEventId'] ??
-                  data['cancelDoseEventId'] ??
-                  data['id'];
-              if (doseIdStr != null) {
-                final str = doseIdStr.toString();
-                final parsedId = int.tryParse(str);
-                if (parsedId != null) {
-                  await ref
-                      .read(notificationSchedulerProvider)
-                      .cancelForDoseEvent(parsedId);
-                } else {
-                  final db = ref.read(databaseProvider);
-                  final localRow = await (db.select(
-                    db.doseEventsTable,
-                  )..where((t) => t.serverId.equals(str))).getSingleOrNull();
-                  if (localRow != null) {
-                    await ref
-                        .read(notificationSchedulerProvider)
-                        .cancelForDoseEvent(localRow.id);
-                  }
-                }
-              }
-              unawaited(ref.read(syncNotificationsUseCaseProvider).call());
-            } else if (action == 'cancel_recurring' ||
-                action == 'recurring_cancelled' ||
-                data.containsKey('cancelRecurring')) {
-              await ref.read(notificationSchedulerProvider).cancelAll();
-              unawaited(ref.read(syncNotificationsUseCaseProvider).call());
-            }
-
-            final profile = ref.read(currentUserProfileProvider);
-            if (profile != null && profile.id != 'default') {
-              unawaited(ref.read(syncEngineProvider).syncProfile(profile.id));
-            }
-            ref.read(inAppReminderServiceProvider).reevaluate();
-          },
+          onForegroundMessage: ForegroundPushHandler(ref).handle,
         ),
       );
     } catch (e) {
@@ -213,39 +167,6 @@ class MyPillsApp extends StatelessWidget {
     locale: const Locale('es'),
     routerConfig: router,
     scrollBehavior: AppTheme.scrollBehavior,
-    builder: (context, child) => _OemSetupGate(
-      child: InAppReminderOverlay(child: child!),
-    ),
+    builder: (context, child) => InAppReminderOverlay(child: child!),
   );
-}
-
-class _OemSetupGate extends ConsumerStatefulWidget {
-  const _OemSetupGate({required this.child});
-
-  final Widget child;
-
-  @override
-  ConsumerState<_OemSetupGate> createState() => _OemSetupGateState();
-}
-
-class _OemSetupGateState extends ConsumerState<_OemSetupGate> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _maybePrompt());
-  }
-
-  Future<void> _maybePrompt() async {
-    final family = await DeviceManufacturerInfo().detectOem();
-    if (!family.needsManualSetup || !mounted) return;
-    final prefs = ref.read(sharedPreferencesProvider);
-    await maybeShowOemSetup(
-      context: context,
-      prefs: prefs,
-      family: family,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) => widget.child;
 }

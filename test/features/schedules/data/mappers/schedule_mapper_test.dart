@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_pills/core/db/app_database.dart';
 import 'package:my_pills/features/schedules/data/mappers/schedule_mapper.dart';
+import 'package:my_pills/features/schedules/domain/entities/dose.dart';
 import 'package:my_pills/features/schedules/domain/entities/schedule.dart';
 
 void main() {
@@ -101,6 +102,44 @@ void main() {
         expect(specific.endDate, DateTime(2024, 7, 10));
       });
 
+      test('rehydrates nullable dose as null', () {
+        final row = SchedulesTableData(
+          id: 1,
+          medicationId: 10,
+          ruleType: 'daily',
+          ruleJson: '{"timesOfDay":[{"hour":8,"minute":0}]}',
+          startDateUtc: DateTime(2024, 6, 10).toUtc(),
+          profileId: 'default',
+          syncStatus: 'synced',
+          isTombstone: false,
+        );
+
+        final entity = toScheduleEntity(row);
+        expect(entity.dose, isNull);
+      });
+
+      test('rehydrates dose object from columns', () {
+        final row = SchedulesTableData(
+          id: 1,
+          medicationId: 10,
+          ruleType: 'daily',
+          ruleJson: '{"timesOfDay":[{"hour":8,"minute":0}]}',
+          startDateUtc: DateTime(2024, 6, 10).toUtc(),
+          doseAmount: 5,
+          doseUnit: 'ml',
+          doseDisplay: '5 ml',
+          profileId: 'default',
+          syncStatus: 'synced',
+          isTombstone: false,
+        );
+
+        final entity = toScheduleEntity(row);
+        expect(
+          entity.dose,
+          const Dose(amount: 5, unit: 'ml', display: '5 ml'),
+        );
+      });
+
       test('throws on unknown rule type', () {
         final row = SchedulesTableData(
           id: 5,
@@ -125,6 +164,7 @@ void main() {
           timesOfDay: const [(hour: 8, minute: 0)],
           startDate: DateTime(2024, 6, 10),
           endDate: DateTime(2024, 6, 20),
+          dose: const Dose(amount: 400, unit: 'mg', display: '400 mg'),
         );
 
         final companion = toScheduleInsertCompanion(schedule);
@@ -137,6 +177,9 @@ void main() {
         );
         expect(companion.startDateUtc.value, DateTime(2024, 6, 10).toUtc());
         expect(companion.endDateUtc.value, DateTime(2024, 6, 20).toUtc());
+        expect(companion.doseAmount.value, 400);
+        expect(companion.doseUnit.value, 'mg');
+        expect(companion.doseDisplay.value, '400 mg');
       });
 
       test('serializes DailyInterval schedule with endAt', () {

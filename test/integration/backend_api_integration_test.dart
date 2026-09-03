@@ -85,7 +85,6 @@ void main() {
             '/profiles/$profileId/medications',
             data: {
               'name': 'Amoxicilina',
-              'dosage': '500mg',
               'instructions': 'Tomar cada 8 horas con comida',
               'clientId': medClientId,
             },
@@ -101,6 +100,8 @@ void main() {
               'medicationId': medId,
               'type': 'daily',
               'startDate': DateTime.now().toUtc().toIso8601String(),
+              'doseAmount': 500,
+              'doseUnit': 'mg',
               'timesOfDay': [
                 {'hour': 8, 'minute': 0},
                 {'hour': 16, 'minute': 0},

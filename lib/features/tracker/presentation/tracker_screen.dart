@@ -533,7 +533,7 @@ class _DoseRow extends ConsumerWidget {
         medicationIcon: formIcon,
         medicationColor: medColor,
         child: TimelineCard(
-          title: medication.name,
+          title: dose.dose?.labeled(medication.name) ?? medication.name,
           subtitle: medication.notes ?? '',
           profileName: profileName,
           profilePhotoPath: profilePhotoPath,

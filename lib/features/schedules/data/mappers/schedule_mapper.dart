@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 import 'package:my_pills/core/db/app_database.dart';
+import 'package:my_pills/features/schedules/data/mappers/dose_mapper.dart';
 import 'package:my_pills/features/schedules/domain/entities/schedule.dart';
 import 'package:uuid/uuid.dart';
 
@@ -13,6 +14,11 @@ Schedule toScheduleEntity(SchedulesTableData row) {
   final map = jsonDecode(row.ruleJson) as Map<String, dynamic>;
   final notifyPush = map['notifyPush'] as bool? ?? true;
   final notifyCalendar = map['notifyCalendar'] as bool? ?? false;
+  final dose = DoseFields(
+    amount: row.doseAmount,
+    unit: row.doseUnit,
+    display: row.doseDisplay,
+  ).toDose();
 
   switch (row.ruleType) {
     case _dailyRuleType:
@@ -24,6 +30,7 @@ Schedule toScheduleEntity(SchedulesTableData row) {
         endDate: row.endDateUtc?.toLocal(),
         notifyPush: notifyPush,
         notifyCalendar: notifyCalendar,
+        dose: dose,
       );
     case _dailyIntervalRuleType:
       final endAtRaw = map['endAt'];
@@ -39,6 +46,7 @@ Schedule toScheduleEntity(SchedulesTableData row) {
         endDate: row.endDateUtc?.toLocal(),
         notifyPush: notifyPush,
         notifyCalendar: notifyCalendar,
+        dose: dose,
       );
     case _specificDaysRuleType:
       return Schedule.specificDays(
@@ -50,6 +58,7 @@ Schedule toScheduleEntity(SchedulesTableData row) {
         endDate: row.endDateUtc?.toLocal(),
         notifyPush: notifyPush,
         notifyCalendar: notifyCalendar,
+        dose: dose,
       );
     default:
       throw FormatException('Unknown schedule rule type: ${row.ruleType}');
@@ -62,12 +71,16 @@ SchedulesTableCompanion toScheduleInsertCompanion(
   String? serverId,
   String? profileId,
 }) {
+  final dose = DoseFields.of(schedule.dose);
   return SchedulesTableCompanion.insert(
     medicationId: schedule.medicationId,
     ruleType: _ruleTypeOf(schedule),
     ruleJson: jsonEncode(_ruleJsonOf(schedule)),
     startDateUtc: schedule.startDate.toUtc(),
     endDateUtc: Value(schedule.endDate?.toUtc()),
+    doseAmount: dose.amountValue,
+    doseUnit: dose.unitValue,
+    doseDisplay: dose.displayValue,
     clientId: Value(clientId ?? const Uuid().v4()),
     serverId: Value(serverId),
     profileId: Value(profileId ?? 'default'),

@@ -39,6 +39,15 @@ enum ValidationCode {
 
   /// DailyInterval endAt is not after startAt.
   invalidTimeRange,
+
+  /// Creating a schedule requires a dose amount and unit.
+  doseRequired,
+
+  /// Dose amount is not > 0 or has more than 4 decimal places.
+  invalidDoseAmount,
+
+  /// Dose unit is missing or not a catalog code.
+  invalidDoseUnit,
 }
 
 /// Domain-level failure sealed union.

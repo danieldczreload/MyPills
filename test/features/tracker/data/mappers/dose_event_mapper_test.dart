@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_pills/core/db/app_database.dart';
 import 'package:my_pills/features/tracker/data/mappers/dose_event_mapper.dart';
+import 'package:my_pills/features/schedules/domain/entities/dose.dart';
 import 'package:my_pills/features/tracker/domain/entities/dose_event.dart';
 
 void main() {
@@ -25,6 +26,30 @@ void main() {
       expect(entity.scheduledAt, DateTime(2024, 6, 10, 8));
       expect(entity.status, DoseStatus.pending);
       expect(entity.takenAt, isNull);
+      expect(entity.dose, isNull);
+    });
+
+    test('toDoseEventEntity maps dose object', () {
+      final row = DoseEventsTableData(
+        id: 1,
+        medicationId: 10,
+        scheduleId: 100,
+        scheduledAtUtc: DateTime(2024, 6, 10, 8).toUtc(),
+        status: 'pending',
+        doseAmount: 2.5,
+        doseUnit: 'ml',
+        doseDisplay: '2.5 ml',
+        profileId: 'default',
+        syncStatus: 'synced',
+        isTombstone: false,
+      );
+
+      final entity = toDoseEventEntity(row);
+
+      expect(
+        entity.dose,
+        const Dose(amount: 2.5, unit: 'ml', display: '2.5 ml'),
+      );
     });
 
     test('toDoseEventEntity maps taken row with takenAt to entity', () {

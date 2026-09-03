@@ -290,7 +290,12 @@ class _ScheduleItem extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  _timesLabel(schedule),
+                  [
+                    if (schedule.dose != null &&
+                        schedule.dose!.display.isNotEmpty)
+                      schedule.dose!.display,
+                    _timesLabel(schedule),
+                  ].join(' · '),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
