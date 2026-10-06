@@ -92,10 +92,20 @@ class _MyPillsBootstrapState extends ConsumerState<MyPillsBootstrap>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      mlog('mypills.boot', 'app resumed — refreshing notifications');
-      unawaited(ref.read(syncNotificationsUseCaseProvider).call());
-      ref.read(inAppReminderServiceProvider).reevaluate();
+      unawaited(_onResumed());
     }
+  }
+
+  Future<void> _onResumed() async {
+    await DeviceTimezone.initializeLocal();
+    if (!mounted) return;
+    mlog(
+      'mypills.boot',
+      'app resumed — refreshing notifications '
+          'zone=${DeviceTimezone.currentIanaId()}',
+    );
+    await ref.read(syncNotificationsUseCaseProvider).call();
+    ref.read(inAppReminderServiceProvider).reevaluate();
   }
 
   @override

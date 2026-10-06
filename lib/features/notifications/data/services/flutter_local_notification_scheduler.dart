@@ -1,4 +1,5 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:my_pills/core/utils/device_timezone.dart';
 import 'package:my_pills/core/utils/log.dart';
 import 'package:my_pills/features/notifications/data/services/notification_init.dart';
 import 'package:my_pills/features/notifications/domain/services/notification_scheduler.dart';
@@ -99,11 +100,13 @@ class FlutterLocalNotificationScheduler implements NotificationScheduler {
     required AndroidScheduleMode mode,
   }) async {
     try {
-      // Build the TZDateTime via UTC so a misconfigured tz.local (e.g. when
-      // FlutterTimezone fails and tz.local stays UTC) doesn't shift the
-      // absolute moment. Dart's DateTime knows the device timezone, so
-      // when.toUtc() gives the correct absolute UTC instant.
-      final tzWhen = tz.TZDateTime.from(when.toUtc(), tz.UTC);
+      // Android schedules the clock components in `timeZoneName`. 08:00 must
+      // travel with the device IANA zone. A zone whose offset disagrees with
+      // the device keeps the UTC instant instead of moving the reminder.
+      final tzWhen = DeviceTimezone.reminderInstant(
+        when,
+        ianaId: DeviceTimezone.currentIanaId(),
+      );
       mlog(
         'mypills.notif',
         '  zonedSchedule id=$id when=$when tzWhen=$tzWhen mode=$mode',

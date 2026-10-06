@@ -67,6 +67,7 @@ class PkceCalendarService {
         }
       } else {
         final name = _prefs?.getString('profile.name') ?? 'Usuario';
+        await DeviceTimezone.initializeLocal();
         final timezone = DeviceTimezone.currentIanaId();
         final createRes = await _apiClient.dio.post<Map<String, dynamic>>(
           '/profiles',

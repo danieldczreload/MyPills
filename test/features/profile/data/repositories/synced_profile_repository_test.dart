@@ -83,7 +83,7 @@ void main() {
       final outboxItems = await db.select(db.outboxTable).get();
       expect(outboxItems.length, equals(1));
       expect(outboxItems.first.entityType, equals('profile'));
-      expect(outboxItems.first.action, equals('UPDATE'));
+      expect(outboxItems.first.action, equals('CREATE'));
       final payload =
           jsonDecode(outboxItems.first.payloadJson) as Map<String, dynamic>;
       expect(payload['timezone'], 'America/Mexico_City');

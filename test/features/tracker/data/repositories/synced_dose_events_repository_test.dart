@@ -105,7 +105,7 @@ void main() {
       final outboxItems = await db.select(db.outboxTable).get();
       expect(outboxItems.length, equals(1));
       expect(outboxItems.first.entityType, equals('dose_event'));
-      expect(outboxItems.first.action, equals('UPDATE'));
+      expect(outboxItems.first.action, equals('TRACK'));
       verify(() => mockSyncEngine.flushOutbox()).called(1);
     });
 
@@ -120,7 +120,7 @@ void main() {
       final outboxItems = await db.select(db.outboxTable).get();
       expect(outboxItems.length, equals(1));
       expect(outboxItems.first.entityType, equals('dose_event'));
-      expect(outboxItems.first.action, equals('UPDATE'));
+      expect(outboxItems.first.action, equals('TRACK'));
       verify(() => mockSyncEngine.flushOutbox()).called(1);
     });
 

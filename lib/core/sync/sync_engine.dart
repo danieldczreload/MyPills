@@ -180,6 +180,7 @@ class SyncEngine {
                   DateTime.tryParse(localBirthDateStr) ?? DateTime(1990),
                 )
               : '1990-01-01';
+          await DeviceTimezone.initializeLocal();
           final timezone = DeviceTimezone.currentIanaId();
           final createRes = await _apiClient.dio.post<Map<String, dynamic>>(
             '/profiles',

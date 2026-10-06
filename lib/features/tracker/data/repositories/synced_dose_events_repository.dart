@@ -76,7 +76,7 @@ class SyncedDoseEventRepository implements DoseEventRepository {
     final payload = <String, dynamic>{
       'scheduleId': scheduleRef,
       'localScheduleId': localDose.scheduleId,
-      'scheduledAt': localDose.scheduledAtUtc.toIso8601String(),
+      'scheduledAt': localDose.scheduledAtUtc.toUtc().toIso8601String(),
       'status': status,
       'clientId': clientId,
       if (takenAt != null) 'takenAt': takenAt.toUtc().toIso8601String(),

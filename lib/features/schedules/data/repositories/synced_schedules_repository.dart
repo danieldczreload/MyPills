@@ -58,6 +58,7 @@ class SyncedScheduleRepository implements ScheduleRepository {
         specificDays: (_) => 'specific_days',
       );
 
+      await DeviceTimezone.initializeLocal();
       final timezone = DeviceTimezone.currentIanaId();
       final payload = <String, dynamic>{
         'medicationId': medicationRef,

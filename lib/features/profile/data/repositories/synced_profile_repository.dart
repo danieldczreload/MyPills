@@ -79,6 +79,7 @@ class SyncedProfileRepository implements UserProfileRepository {
         : (effectiveProfile.id == 'default' ? 'default' : effectiveProfile.id);
     final action = isUpdate ? 'UPDATE' : 'CREATE';
 
+    await DeviceTimezone.initializeLocal();
     final timezone = DeviceTimezone.currentIanaId();
     final payload = <String, dynamic>{
       'name': effectiveProfile.name,
