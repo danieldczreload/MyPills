@@ -23,9 +23,8 @@ class OnboardingScreen extends ConsumerWidget {
 
     final initialProfile = authUser != null
         ? UserProfile(
-            id: 'default',
             name: authUser.name ?? '',
-            birthDate: DateTime(2000, 1, 1),
+            birthDate: DateTime(2000),
             gender: 'other',
             photoPath: authUser.photoUrl,
           )

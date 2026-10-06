@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:dio/dio.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:my_pills/core/errors/failure.dart';
@@ -31,12 +30,7 @@ class FcmDeviceService {
       final messaging = FirebaseMessaging.instance;
 
       // Request notification permissions
-      final settings = await messaging.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-        provisional: false,
-      );
+      final settings = await messaging.requestPermission();
 
       mlog(
         'mypills.fcm',
@@ -121,8 +115,8 @@ class FcmDeviceService {
           response.statusCode! < 300) {
         final deviceId = response.data?['id']?.toString() ?? '';
         if (deviceId.isNotEmpty && _prefs != null) {
-          await _prefs!.setString(_deviceIdKey, deviceId);
-          await _prefs!.setString(_lastRegisteredTokenKey, fcmToken);
+          await _prefs.setString(_deviceIdKey, deviceId);
+          await _prefs.setString(_lastRegisteredTokenKey, fcmToken);
         }
         return Result.success(deviceId);
       }
@@ -161,7 +155,7 @@ class FcmDeviceService {
         data: {
           'title': title,
           'body': body,
-          if (data != null) 'data': data,
+          'data': ?data,
         },
       );
 
@@ -243,7 +237,7 @@ class FcmDeviceService {
         : locale;
     final normalized = raw.replaceAll('_', '-');
     final match = RegExp(
-      r'^([A-Za-z]{2})(?:-([A-Za-z]{2}))?',
+      '^([A-Za-z]{2})(?:-([A-Za-z]{2}))?',
     ).firstMatch(normalized);
     if (match == null) return 'es';
     final lang = match.group(1)!.toLowerCase();

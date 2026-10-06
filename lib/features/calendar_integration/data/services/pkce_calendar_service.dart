@@ -7,6 +7,7 @@ import 'package:my_pills/core/network/api_client.dart';
 import 'package:my_pills/core/network/http_error_body.dart';
 import 'package:my_pills/core/result/result.dart';
 import 'package:my_pills/core/utils/device_timezone.dart';
+import 'package:my_pills/features/calendar_integration/domain/calendar_connection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PkceAuthorizeResult {
@@ -114,10 +115,10 @@ class PkceCalendarService {
         final authUrl = data['authorizationUrl'] as String? ?? '';
 
         if (_prefs != null && state.isNotEmpty) {
-          await _prefs!.setString('$_verifierPrefix$state', codeVerifier);
-          await _prefs!.setString('$_providerPrefix$state', provider);
-          await _prefs!.setString('${_verifierPrefix}latest', codeVerifier);
-          await _prefs!.setString('${_providerPrefix}latest', provider);
+          await _prefs.setString('$_verifierPrefix$state', codeVerifier);
+          await _prefs.setString('$_providerPrefix$state', provider);
+          await _prefs.setString('${_verifierPrefix}latest', codeVerifier);
+          await _prefs.setString('${_providerPrefix}latest', provider);
         }
 
         return Result.success(
@@ -184,8 +185,8 @@ class PkceCalendarService {
     );
 
     if (_prefs != null) {
-      await _prefs!.remove('$_verifierPrefix$state');
-      await _prefs!.remove('$_providerPrefix$state');
+      await _prefs.remove('$_verifierPrefix$state');
+      await _prefs.remove('$_providerPrefix$state');
     }
 
     return result;
@@ -275,7 +276,7 @@ class PkceCalendarService {
       return FailureResult(
         Failure.server(
           statusCode: e.response?.statusCode ?? 500,
-          message: e.message,
+          message: jsonServerErrorMessage(e.response?.data) ?? e.message,
         ),
       );
     } catch (e, st) {
@@ -311,10 +312,14 @@ class PkceCalendarService {
           e.type == DioExceptionType.connectionTimeout) {
         return const Result.failure(Failure.network());
       }
+      final status = e.response?.statusCode ?? 500;
+      if (status == 404) {
+        return const Result.success(null);
+      }
       return FailureResult(
         Failure.server(
-          statusCode: e.response?.statusCode ?? 500,
-          message: e.message,
+          statusCode: status,
+          message: jsonServerErrorMessage(e.response?.data) ?? e.message,
         ),
       );
     } catch (e, st) {
@@ -376,7 +381,7 @@ class PkceCalendarService {
 
   /// Fetches current calendar connections for profileId.
   /// Sends `GET /calendars?profileId=...`.
-  Future<Result<List<Map<String, dynamic>>>> getConnections({
+  Future<Result<List<CalendarConnection>>> getConnections({
     required String profileId,
   }) async {
     try {
@@ -389,6 +394,8 @@ class PkceCalendarService {
       if (response.statusCode == 200 && response.data is List) {
         final list = (response.data as List)
             .whereType<Map<String, dynamic>>()
+            .map(CalendarConnection.tryFromJson)
+            .whereType<CalendarConnection>()
             .toList();
         return Result.success(list);
       }

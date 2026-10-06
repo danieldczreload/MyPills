@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
 import 'package:my_pills/app/providers.dart';
 import 'package:my_pills/core/result/result.dart';
 import 'package:my_pills/core/widgets/glass_bottom_nav.dart';
@@ -14,11 +13,11 @@ import 'package:my_pills/features/medications/presentation/add_medication_screen
 import 'package:my_pills/features/medications/presentation/medication_detail_screen.dart';
 import 'package:my_pills/features/medications/presentation/medication_list_screen.dart';
 import 'package:my_pills/features/medications/presentation/taxonomy_screen.dart';
-import 'package:my_pills/features/schedules/presentation/daily_scheduler_screen.dart';
-import 'package:my_pills/features/schedules/presentation/specific_days_scheduler_screen.dart';
 import 'package:my_pills/features/profile/presentation/edit_profile_screen.dart';
 import 'package:my_pills/features/profile/presentation/onboarding_screen.dart';
 import 'package:my_pills/features/profile/presentation/providers/profile_providers.dart';
+import 'package:my_pills/features/schedules/presentation/daily_scheduler_screen.dart';
+import 'package:my_pills/features/schedules/presentation/specific_days_scheduler_screen.dart';
 import 'package:my_pills/features/settings/presentation/settings_screen.dart';
 import 'package:my_pills/features/splash/presentation/splash_screen.dart';
 import 'package:my_pills/features/tracker/presentation/tracker_screen.dart';

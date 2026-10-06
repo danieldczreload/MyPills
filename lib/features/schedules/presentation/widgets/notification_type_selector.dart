@@ -5,7 +5,10 @@ import 'package:my_pills/app/providers.dart';
 import 'package:my_pills/app/router.dart';
 import 'package:my_pills/core/theme/serene_theme.dart';
 import 'package:my_pills/core/widgets/app_notification.dart';
+import 'package:my_pills/features/calendar_integration/domain/calendar_connection.dart';
+import 'package:my_pills/features/calendar_integration/presentation/google_calendar_link_messages.dart';
 import 'package:my_pills/features/profile/presentation/providers/profile_providers.dart';
+import 'package:my_pills/l10n/app_localizations.dart';
 
 /// Serene Selector for choosing reminder delivery methods per schedule (Push and/or Calendar).
 class NotificationTypeSelector extends ConsumerWidget {
@@ -26,16 +29,20 @@ class NotificationTypeSelector extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final serene = theme.extension<SereneTheme>()!;
+    final l10n = AppLocalizations.of(context);
     final profile = ref.watch(currentUserProfileProvider);
     final profileId = profile?.id ?? 'default';
     final connectionsAsync = ref.watch(calendarConnectionsProvider(profileId));
-    final connections = connectionsAsync.value ?? [];
-    final hasConnectedCalendar = connections.any(
-      (c) => c['connected'] == true || c['status'] == 'active',
-    );
-    final connectedProviderName = connections
-        .where((c) => c['connected'] == true || c['status'] == 'active')
-        .map((c) => c['provider'] == 'google' ? 'Google Calendar' : 'Outlook')
+    final connections = connectionsAsync.value ?? const <CalendarConnection>[];
+    final activeConnections = connections
+        .where((connection) => connection.isActive)
+        .toList();
+    final hasConnectedCalendar = activeConnections.isNotEmpty;
+    final needsReauth = connections.any((connection) => connection.needsReauth);
+    final connectedProviderName = activeConnections
+        .map(
+          (connection) => calendarProviderLabel(l10n, connection.provider),
+        )
         .join(', ');
 
     return Container(
@@ -262,7 +269,9 @@ class NotificationTypeSelector extends ConsumerWidget {
                           SizedBox(width: serene.spacing.xs),
                           Expanded(
                             child: Text(
-                              'Sin cuenta de calendario conectada.',
+                              needsReauth
+                                  ? l10n.settingsCloudCalendarReauthRequired
+                                  : 'Sin cuenta de calendario conectada.',
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: theme.colorScheme.error,
                                 fontWeight: FontWeight.w600,
@@ -276,7 +285,11 @@ class NotificationTypeSelector extends ConsumerWidget {
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
                             onPressed: () => context.push(AppRoutes.settings),
-                            child: const Text('Conectar'),
+                            child: Text(
+                              needsReauth
+                                  ? l10n.settingsCloudCalendarReconnect
+                                  : 'Conectar',
+                            ),
                           ),
                         ],
                       ),

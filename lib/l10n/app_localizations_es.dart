@@ -597,6 +597,127 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsCloudSyncLoggedOut => 'Sesión cerrada';
 
   @override
+  String get settingsCloudCalendarSection =>
+      'Calendarios en la Nube (Google / Outlook)';
+
+  @override
+  String get settingsCloudCalendarDesc =>
+      'Sincroniza tus dosis automáticamente con tu cuenta de Google Calendar o Microsoft Outlook.';
+
+  @override
+  String get settingsCloudCalendarGoogle => 'Google Calendar';
+
+  @override
+  String get settingsCloudCalendarMicrosoft => 'Microsoft Outlook';
+
+  @override
+  String get settingsCloudCalendarConnected => 'Conectado';
+
+  @override
+  String get settingsCloudCalendarNotConnected => 'No conectado';
+
+  @override
+  String get settingsCloudCalendarReauthRequired =>
+      'Hay que volver a autorizar';
+
+  @override
+  String get settingsCloudCalendarConnect => 'Conectar';
+
+  @override
+  String get settingsCloudCalendarDisconnect => 'Desconectar';
+
+  @override
+  String get settingsCloudCalendarReconnect => 'Reconectar';
+
+  @override
+  String get settingsCloudCalendarSyncNow => 'Sincronizar eventos ahora';
+
+  @override
+  String get settingsCloudCalendarDisconnectFailed =>
+      'No se pudo desconectar el calendario';
+
+  @override
+  String get settingsCloudCalendarConnectedToast => 'Google Calendar conectado';
+
+  @override
+  String get settingsCloudCalendarNoProfile =>
+      'No hay un perfil activo seleccionado';
+
+  @override
+  String get settingsCloudCalendarScopeDenied =>
+      'Se necesita permiso de Google Calendar para sincronizar.';
+
+  @override
+  String get settingsCloudCalendarMismatchedAccount =>
+      'La cuenta de Google no coincide con la sesión. Vuelve a intentarlo con la misma cuenta.';
+
+  @override
+  String get settingsCloudCalendarLinkFailed =>
+      'No se pudo preparar el permiso de Google Calendar. Intenta de nuevo.';
+
+  @override
+  String get settingsCloudCalendarAuthMissing =>
+      'No se obtuvo autorización de Google. Intenta de nuevo.';
+
+  @override
+  String get settingsCloudCalendarConnectFailed =>
+      'Fallo al conectar Google Calendar';
+
+  @override
+  String get settingsCloudCalendarAuthorizeFailed => 'Fallo al autorizar';
+
+  @override
+  String settingsCloudCalendarBrowserFailed(String error) {
+    return 'No se pudo abrir el navegador: $error';
+  }
+
+  @override
+  String settingsCloudCalendarConnectError(String error) {
+    return 'Error al conectar: $error';
+  }
+
+  @override
+  String get settingsCloudCalendarInvalidAuthUrl =>
+      'URL de autorización inválida';
+
+  @override
+  String get settingsCloudCalendarSyncFailed =>
+      'No se pudo sincronizar el calendario en la nube';
+
+  @override
+  String get settingsCloudCalendarSyncEmpty =>
+      'Sincronización completada: no hay eventos por crear';
+
+  @override
+  String settingsCloudCalendarSyncOk(int created, int updated) {
+    return 'Sincronización exitosa: $created creados, $updated actualizados';
+  }
+
+  @override
+  String get settingsCloudCalendarReasonUpsert =>
+      'Google no autorizó el calendario. Desconecta y vuelve a conectar aceptando el permiso.';
+
+  @override
+  String get settingsCloudCalendarReasonRefresh =>
+      'No se pudo sincronizar con el proveedor de calendario';
+
+  @override
+  String get settingsCloudCalendarReasonReauth =>
+      'Reautoriza la conexión de calendario e intenta de nuevo';
+
+  @override
+  String get settingsCloudCalendarReasonNoMedications =>
+      'Sin medicamentos registrados: no hay eventos que sincronizar';
+
+  @override
+  String get settingsCloudCalendarReasonNoSchedules =>
+      'Sin horarios activos: no hay eventos que sincronizar';
+
+  @override
+  String get settingsCloudCalendarReasonNoDoses =>
+      'No hay dosis próximas en los siguientes 14 días';
+
+  @override
   String get greetingGenericWelcome =>
       'Bienvenido a tu espacio de salud. Mantén el control de tus medicamentos y dosis diarias.';
 

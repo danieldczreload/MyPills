@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_pills/core/db/app_database.dart';
-import 'package:my_pills/features/tracker/data/mappers/dose_event_mapper.dart';
 import 'package:my_pills/features/schedules/domain/entities/dose.dart';
+import 'package:my_pills/features/tracker/data/mappers/dose_event_mapper.dart';
 import 'package:my_pills/features/tracker/domain/entities/dose_event.dart';
 
 void main() {

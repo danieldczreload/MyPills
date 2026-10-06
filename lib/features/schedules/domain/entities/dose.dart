@@ -31,7 +31,7 @@ class Dose {
     }
     final unit = json['unit'];
     if (unit is! String || unit.isEmpty) {
-      throw FormatException('Dose.unit must be a non-empty string');
+      throw const FormatException('Dose.unit must be a non-empty string');
     }
     final displayRaw = json['display'];
     final display = displayRaw is String && displayRaw.isNotEmpty

@@ -133,7 +133,6 @@ class TimelineCard extends StatelessWidget {
                           color: theme.colorScheme.secondary.withValues(
                             alpha: 0.3,
                           ),
-                          width: 1,
                         ),
                       ),
                       child: Row(
@@ -169,7 +168,6 @@ class TimelineCard extends StatelessWidget {
                         borderRadius: serene.radius.full,
                         border: Border.all(
                           color: effectiveAccent.withValues(alpha: 0.25),
-                          width: 1,
                         ),
                       ),
                       child: Row(

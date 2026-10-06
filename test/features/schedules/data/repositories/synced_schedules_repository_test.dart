@@ -6,12 +6,12 @@ import 'package:mocktail/mocktail.dart';
 import 'package:my_pills/core/db/app_database.dart';
 import 'package:my_pills/core/result/result.dart';
 import 'package:my_pills/core/sync/sync_engine.dart';
-import 'package:timezone/data/latest_all.dart' as tzdata;
-import 'package:timezone/timezone.dart' as tz;
 import 'package:my_pills/features/schedules/data/repositories/synced_schedules_repository.dart';
 import 'package:my_pills/features/schedules/domain/entities/dose.dart';
 import 'package:my_pills/features/schedules/domain/entities/schedule.dart';
 import 'package:my_pills/features/schedules/domain/repositories/schedule_repository.dart';
+import 'package:timezone/data/latest_all.dart' as tzdata;
+import 'package:timezone/timezone.dart' as tz;
 
 import '../../../../helpers/sqlite_support.dart';
 

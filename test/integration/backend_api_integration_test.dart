@@ -4,7 +4,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_pills/core/config/env_config.dart';
 import 'package:my_pills/core/network/api_client.dart';
-import 'package:my_pills/core/result/result.dart';
 import 'package:my_pills/core/storage/token_storage.dart';
 import 'package:my_pills/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:my_pills/features/calendar_integration/data/services/pkce_calendar_service.dart';
@@ -75,7 +74,7 @@ void main() {
           final profileId = profileResp.data!['id'] as String;
           expect(profileId, isNotEmpty);
 
-          final uuid = const Uuid();
+          const uuid = Uuid();
           final medClientId = uuid.v4();
           final schedClientId = uuid.v4();
           final doseClientId = uuid.v4();

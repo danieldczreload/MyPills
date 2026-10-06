@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:my_pills/app/providers.dart';
 import 'package:my_pills/app/router.dart';
-import 'package:my_pills/core/auth/app_google_sign_in.dart';
-import 'package:my_pills/core/config/env_config.dart';
 import 'package:my_pills/core/errors/failure.dart';
 import 'package:my_pills/core/result/result.dart';
 import 'package:my_pills/core/theme/serene_theme.dart';
@@ -12,6 +10,9 @@ import 'package:my_pills/core/widgets/app_avatar.dart';
 import 'package:my_pills/core/widgets/app_notification.dart';
 import 'package:my_pills/core/widgets/sanctuary_app_bar.dart';
 import 'package:my_pills/features/auth/presentation/providers/auth_providers.dart';
+import 'package:my_pills/features/calendar_integration/domain/calendar_connection.dart';
+import 'package:my_pills/features/calendar_integration/domain/google_calendar_link.dart';
+import 'package:my_pills/features/calendar_integration/presentation/google_calendar_link_messages.dart';
 import 'package:my_pills/features/notifications/presentation/providers/notification_providers.dart';
 import 'package:my_pills/features/profile/presentation/providers/profile_providers.dart';
 import 'package:my_pills/features/profile/presentation/widgets/profile_switch_sheet.dart';
@@ -238,7 +239,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
           // Cloud Calendars Section (Google & Microsoft OAuth PKCE)
           Text(
-            'Calendarios en la Nube (Google / Outlook)',
+            l10n.settingsCloudCalendarSection,
             style: theme.textTheme.titleMedium?.copyWith(
               color: colorScheme.primary,
               fontWeight: FontWeight.bold,
@@ -343,136 +344,63 @@ class _CloudCalendarCard extends ConsumerStatefulWidget {
 
 class _CloudCalendarCardState extends ConsumerState<_CloudCalendarCard> {
   bool _isLoading = false;
-  List<Map<String, dynamic>> _connections = [];
 
-  @override
-  void initState() {
-    super.initState();
-    _fetchConnections();
+  CalendarConnection? _connection(
+    List<CalendarConnection> connections,
+    CalendarProvider provider,
+  ) {
+    return connections
+        .where((connection) => connection.provider == provider)
+        .firstOrNull;
   }
 
-  Future<void> _fetchConnections() async {
-    final profile = ref.read(currentUserProfileProvider);
-    if (profile == null) return;
-    final calendarService = ref.read(pkceCalendarServiceProvider);
-    final result = await calendarService.getConnections(profileId: profile.id);
-    if (result case Success(:final value)) {
-      if (mounted) {
-        setState(() => _connections = value);
-      }
-    }
-  }
-
-  bool _isConnected(String provider) {
-    return _connections.any(
-      (c) =>
-          c['provider'] == provider &&
-          (c['connected'] == true || c['status'] == 'active'),
-    );
-  }
-
-  Future<void> _connect(String provider) async {
-    if (provider == 'google') {
+  Future<void> _connect(CalendarProvider provider) async {
+    if (provider == CalendarProvider.google) {
       await _connectGoogle();
       return;
     }
-    await _connectViaBrowser(provider);
+    await _connectViaBrowser(provider.wire);
   }
 
-  /// Google Calendar uses the native google_sign_in flow: the SDK requests
-  /// the calendar scope and returns a serverAuthCode that the backend
-  /// exchanges for tokens (browser redirect flows are rejected by Google on
-  /// Android clients).
   Future<void> _connectGoogle() async {
+    final l10n = AppLocalizations.of(context);
     final profile = ref.read(currentUserProfileProvider);
-    if (profile == null) {
-      AppNotification.showWarning(
+    final profileId = profile?.id ?? '';
+    setState(() => _isLoading = true);
+    final email = ref.read(authProvider).asData?.value?.email;
+    final outcome = await linkGoogleCalendarForProfile(
+      ref: ref,
+      profileId: profileId,
+      expectedEmail: email,
+    );
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (outcome is GoogleCalendarLinked) {
+      AppNotification.showSuccess(
         context,
-        'No hay un perfil activo seleccionado',
+        l10n.settingsCloudCalendarConnectedToast,
       );
+      await _syncNow();
       return;
     }
 
-    String? message;
-    setState(() => _isLoading = true);
-    try {
-      // Drop the login-only grant. signOut() + silent sign-in reuses the
-      // original email/profile token (no calendar scope) and Google Calendar
-      // then returns 403 ACCESS_TOKEN_SCOPE_INSUFFICIENT.
-      await appGoogleSignIn.disconnect();
-      final account = await appGoogleSignIn.signIn();
-      if (!mounted) return;
-
-      if (account == null) {
-        // User cancelled the Google sign-in dialog.
-        setState(() => _isLoading = false);
-        return;
-      }
-
-      final granted = await appGoogleSignIn.requestScopes(
-        [EnvConfig.googleCalendarScope],
-      );
-      if (!mounted) return;
-      if (!granted) {
-        setState(() => _isLoading = false);
-        AppNotification.showWarning(
-          context,
-          'Se necesita permiso de Google Calendar para sincronizar.',
-        );
-        return;
-      }
-
-      final serverAuthCode =
-          account.serverAuthCode ?? appGoogleSignIn.currentUser?.serverAuthCode;
-      if (serverAuthCode == null || serverAuthCode.isEmpty) {
-        setState(() => _isLoading = false);
-        AppNotification.showError(
-          context,
-          'No se obtuvo autorización de Google. Intenta de nuevo.',
-        );
-        return;
-      }
-
-      final calendarService = ref.read(pkceCalendarServiceProvider);
-      final result = await calendarService.connectWithServerAuthCode(
-        profileId: profile.id,
-        code: serverAuthCode,
-      );
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-
-      if (result case FailureResult(:final failure)) {
-        message = switch (failure) {
-          ServerFailure(:final message) => message ?? 'Error del servidor',
-          _ => 'Fallo al conectar Google Calendar',
-        };
-      } else {
-        await _fetchConnections();
-        if (!mounted) return;
-        AppNotification.showSuccess(
-          context,
-          'Google Calendar conectado',
-        );
-        await _syncNow();
-        return;
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      message = 'Error al conectar: $e';
-    }
-
-    if (message != null && mounted) {
+    final message = googleCalendarLinkMessage(l10n, outcome);
+    if (message == null || !mounted) return;
+    if (outcome is GoogleCalendarLinkFailed) {
       AppNotification.showError(context, message);
+      return;
     }
+    AppNotification.showWarning(context, message);
   }
 
   Future<void> _connectViaBrowser(String provider) async {
+    final l10n = AppLocalizations.of(context);
     final profile = ref.read(currentUserProfileProvider);
     if (profile == null) {
       AppNotification.showWarning(
         context,
-        'No hay un perfil activo seleccionado',
+        l10n.settingsCloudCalendarNoProfile,
       );
       return;
     }
@@ -493,13 +421,13 @@ class _CloudCalendarCardState extends ConsumerState<_CloudCalendarCard> {
             mode: LaunchMode.externalApplication,
           );
           if (!launched) {
-            await launchUrl(uri, mode: LaunchMode.platformDefault);
+            await launchUrl(uri);
           }
         } catch (e) {
           if (mounted) {
             AppNotification.showError(
               context,
-              'No se pudo abrir el navegador: $e',
+              l10n.settingsCloudCalendarBrowserFailed('$e'),
             );
           }
         }
@@ -507,38 +435,52 @@ class _CloudCalendarCardState extends ConsumerState<_CloudCalendarCard> {
         if (mounted) {
           AppNotification.showError(
             context,
-            'URL de autorización inválida',
+            l10n.settingsCloudCalendarInvalidAuthUrl,
           );
         }
       }
     } else if (result case FailureResult(:final failure)) {
       final msg = switch (failure) {
-        ServerFailure(:final message) => message ?? 'Error del servidor',
-        _ => 'Fallo al autorizar',
+        ServerFailure(:final message) =>
+          message ?? l10n.settingsCloudCalendarAuthorizeFailed,
+        _ => l10n.settingsCloudCalendarAuthorizeFailed,
       };
       if (mounted) {
         AppNotification.showError(
           context,
-          'Error al conectar: $msg',
+          l10n.settingsCloudCalendarConnectError(msg),
         );
       }
     }
   }
 
-  Future<void> _disconnect(String provider) async {
+  Future<void> _disconnect(CalendarProvider provider) async {
+    final l10n = AppLocalizations.of(context);
     final profile = ref.read(currentUserProfileProvider);
     if (profile == null) return;
     setState(() => _isLoading = true);
     final calendarService = ref.read(pkceCalendarServiceProvider);
-    await calendarService.disconnectCalendar(
+    final result = await calendarService.disconnectCalendar(
       profileId: profile.id,
-      provider: provider,
+      provider: provider.wire,
     );
-    await _fetchConnections();
+    if (!mounted) return;
+    ref.invalidate(calendarConnectionsProvider(profile.id));
     setState(() => _isLoading = false);
+    if (result case FailureResult(:final failure)) {
+      AppNotification.showError(
+        context,
+        switch (failure) {
+          ServerFailure(:final message) =>
+            message ?? l10n.settingsCloudCalendarDisconnectFailed,
+          _ => l10n.settingsCloudCalendarDisconnectFailed,
+        },
+      );
+    }
   }
 
   Future<void> _syncNow() async {
+    final l10n = AppLocalizations.of(context);
     final profile = ref.read(currentUserProfileProvider);
     if (profile == null) return;
     setState(() => _isLoading = true);
@@ -558,64 +500,99 @@ class _CloudCalendarCardState extends ConsumerState<_CloudCalendarCard> {
 
       final String message;
       if (created == 0 && updated == 0) {
-        message = _describeSkips(skipped);
+        message = _describeSkips(l10n, skipped);
       } else {
-        message =
-            'Sincronización exitosa: $created creados, $updated actualizados';
+        message = l10n.settingsCloudCalendarSyncOk(created, updated);
       }
       AppNotification.showInfo(context, message);
     } else if (result case FailureResult(:final failure)) {
       AppNotification.showError(
         context,
-        _describeSyncFailure(failure),
+        _describeSyncFailure(l10n, failure),
       );
     } else {
       AppNotification.showError(
         context,
-        'No se pudo sincronizar el calendario en la nube',
+        l10n.settingsCloudCalendarSyncFailed,
       );
     }
   }
 
-  String _describeSyncFailure(Failure failure) {
+  String _describeSyncFailure(AppLocalizations l10n, Failure failure) {
     if (failure is ServerFailure && failure.message != null) {
-      return _messageForReason(failure.message!) ??
-          'No se pudo sincronizar el calendario en la nube';
+      return _messageForReason(l10n, failure.message!) ??
+          l10n.settingsCloudCalendarSyncFailed;
     }
-    return 'No se pudo sincronizar el calendario en la nube';
+    return l10n.settingsCloudCalendarSyncFailed;
   }
 
-  String _describeSkips(List<String> reasons) {
+  String _describeSkips(AppLocalizations l10n, List<String> reasons) {
     for (final reason in reasons) {
-      final message = _messageForReason(reason);
+      final message = _messageForReason(l10n, reason);
       if (message != null) return message;
     }
-    return 'Sincronización completada: no hay eventos por crear';
+    return l10n.settingsCloudCalendarSyncEmpty;
   }
 
-  String? _messageForReason(String reason) {
+  String? _messageForReason(AppLocalizations l10n, String reason) {
     return switch (reason) {
-      'UPSERT_FAILED' =>
-        'Google no autorizó el calendario. Desconecta y vuelve a conectar aceptando el permiso.',
-      'REFRESH_FAILED' =>
-        'No se pudo sincronizar con el proveedor de calendario',
-      'REAUTH_REQUIRED' =>
-        'Reautoriza la conexión de calendario e intenta de nuevo',
-      'NO_MEDICATIONS' =>
-        'Sin medicamentos registrados: no hay eventos que sincronizar',
-      'NO_SCHEDULES' => 'Sin horarios activos: no hay eventos que sincronizar',
-      'NO_UPCOMING_DOSE_EVENTS' =>
-        'No hay dosis próximas en los siguientes 14 días',
+      'UPSERT_FAILED' => l10n.settingsCloudCalendarReasonUpsert,
+      'REFRESH_FAILED' => l10n.settingsCloudCalendarReasonRefresh,
+      'REAUTH_REQUIRED' => l10n.settingsCloudCalendarReasonReauth,
+      'NO_MEDICATIONS' => l10n.settingsCloudCalendarReasonNoMedications,
+      'NO_SCHEDULES' => l10n.settingsCloudCalendarReasonNoSchedules,
+      'NO_UPCOMING_DOSE_EVENTS' => l10n.settingsCloudCalendarReasonNoDoses,
       _ => null,
     };
+  }
+
+  String _subtitleFor(CalendarConnection? connection, AppLocalizations l10n) {
+    if (connection?.needsReauth ?? false) {
+      return l10n.settingsCloudCalendarReauthRequired;
+    }
+    if (connection?.isActive ?? false) {
+      return l10n.settingsCloudCalendarConnected;
+    }
+    return l10n.settingsCloudCalendarNotConnected;
+  }
+
+  Widget _trailingFor(
+    CalendarConnection? connection,
+    CalendarProvider provider,
+    AppLocalizations l10n,
+  ) {
+    if (connection?.needsReauth ?? false) {
+      return FilledButton.tonal(
+        onPressed: _isLoading ? null : () => _connect(provider),
+        child: Text(l10n.settingsCloudCalendarReconnect),
+      );
+    }
+    if (connection?.isActive ?? false) {
+      return OutlinedButton(
+        onPressed: _isLoading ? null : () => _disconnect(provider),
+        child: Text(l10n.settingsCloudCalendarDisconnect),
+      );
+    }
+    return FilledButton.tonal(
+      onPressed: _isLoading ? null : () => _connect(provider),
+      child: Text(l10n.settingsCloudCalendarConnect),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final serene = theme.extension<SereneTheme>()!;
-    final googleConnected = _isConnected('google');
-    final microsoftConnected = _isConnected('microsoft');
+    final l10n = AppLocalizations.of(context);
+    final profile = ref.watch(currentUserProfileProvider);
+    final connections = profile == null
+        ? const <CalendarConnection>[]
+        : ref.watch(calendarConnectionsProvider(profile.id)).value ??
+              const <CalendarConnection>[];
+    final google = _connection(connections, CalendarProvider.google);
+    final microsoft = _connection(connections, CalendarProvider.microsoft);
+    final anyActive =
+        (google?.isActive ?? false) || (microsoft?.isActive ?? false);
 
     return Material(
       color: theme.colorScheme.surfaceContainerLow,
@@ -627,67 +604,59 @@ class _CloudCalendarCardState extends ConsumerState<_CloudCalendarCard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Sincroniza tus dosis automáticamente con tu cuenta de Google Calendar o Microsoft Outlook.',
+              l10n.settingsCloudCalendarDesc,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             SizedBox(height: serene.spacing.md),
-            // Google Calendar
             ListTile(
               dense: true,
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.event, color: Colors.blue),
-              title: const Text(
-                'Google Calendar',
-                style: TextStyle(fontWeight: FontWeight.bold),
+              leading: Icon(
+                Icons.event,
+                color: theme.colorScheme.primary,
+                size: serene.spacing.xl,
               ),
-              subtitle: Text(googleConnected ? 'Conectado' : 'No conectado'),
-              trailing: googleConnected
-                  ? OutlinedButton(
-                      onPressed: _isLoading
-                          ? null
-                          : () => _disconnect('google'),
-                      child: const Text('Desconectar'),
-                    )
-                  : FilledButton.tonal(
-                      onPressed: _isLoading ? null : () => _connect('google'),
-                      child: const Text('Conectar'),
-                    ),
+              title: Text(
+                l10n.settingsCloudCalendarGoogle,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              subtitle: Text(_subtitleFor(google, l10n)),
+              trailing: _trailingFor(google, CalendarProvider.google, l10n),
             ),
             const Divider(height: 1),
-            // Microsoft Outlook
             ListTile(
               dense: true,
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.calendar_today, color: Colors.indigo),
-              title: const Text(
-                'Microsoft Outlook',
-                style: TextStyle(fontWeight: FontWeight.bold),
+              leading: Icon(
+                Icons.calendar_today,
+                color: theme.colorScheme.primary,
+                size: serene.spacing.xl,
               ),
-              subtitle: Text(microsoftConnected ? 'Conectado' : 'No conectado'),
-              trailing: microsoftConnected
-                  ? OutlinedButton(
-                      onPressed: _isLoading
-                          ? null
-                          : () => _disconnect('microsoft'),
-                      child: const Text('Desconectar'),
-                    )
-                  : FilledButton.tonal(
-                      onPressed: _isLoading
-                          ? null
-                          : () => _connect('microsoft'),
-                      child: const Text('Conectar'),
-                    ),
+              title: Text(
+                l10n.settingsCloudCalendarMicrosoft,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              subtitle: Text(_subtitleFor(microsoft, l10n)),
+              trailing: _trailingFor(
+                microsoft,
+                CalendarProvider.microsoft,
+                l10n,
+              ),
             ),
-            if (googleConnected || microsoftConnected) ...[
+            if (anyActive) ...[
               SizedBox(height: serene.spacing.md),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
                   onPressed: _isLoading ? null : _syncNow,
-                  icon: const Icon(Icons.sync_rounded, size: 18),
-                  label: const Text('Sincronizar eventos ahora'),
+                  icon: Icon(Icons.sync_rounded, size: serene.spacing.xl),
+                  label: Text(l10n.settingsCloudCalendarSyncNow),
                 ),
               ),
             ],

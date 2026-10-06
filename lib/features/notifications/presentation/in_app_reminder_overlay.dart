@@ -71,8 +71,8 @@ class _InAppReminderOverlayState extends ConsumerState<InAppReminderOverlay>
   void _showOverlay(
     BuildContext context, {
     required InAppBanner banner,
-    String? profileName,
     required VoidCallback onDismiss,
+    String? profileName,
   }) {
     if (_overlayEntry != null) {
       _removeOverlay();
@@ -114,14 +114,13 @@ class _InAppReminderOverlayState extends ConsumerState<InAppReminderOverlay>
                           borderRadius: sereneTheme.radius.md,
                           boxShadow: [
                             BoxShadow(
-                              color: colorScheme.shadow.withOpacity(0.1),
+                              color: colorScheme.shadow.withValues(alpha: 0.1),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
                           ],
                           border: Border.all(
-                            color: colorScheme.primary.withOpacity(0.2),
-                            width: 1,
+                            color: colorScheme.primary.withValues(alpha: 0.2),
                           ),
                         ),
                         child: Row(

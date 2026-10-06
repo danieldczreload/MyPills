@@ -7,6 +7,7 @@ import 'package:my_pills/app/providers.dart';
 import 'package:my_pills/app/router.dart';
 import 'package:my_pills/core/result/result.dart';
 import 'package:my_pills/core/widgets/app_notification.dart';
+import 'package:my_pills/features/calendar_integration/domain/calendar_connection.dart';
 import 'package:my_pills/features/medications/presentation/providers/medications_providers.dart';
 import 'package:my_pills/features/notifications/presentation/providers/notification_providers.dart';
 import 'package:my_pills/features/schedules/domain/entities/dose.dart';
@@ -50,9 +51,10 @@ Future<void> persistNewSchedule({
   }
 
   final connections =
-      ref.read(calendarConnectionsProvider(profileId)).value ?? [];
+      ref.read(calendarConnectionsProvider(profileId)).value ??
+      const <CalendarConnection>[];
   final hasConnectedCalendar = connections.any(
-    (c) => c['connected'] == true || c['status'] == 'active',
+    (connection) => connection.isActive,
   );
 
   if (schedule.notifyPush) {

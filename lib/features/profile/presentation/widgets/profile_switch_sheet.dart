@@ -89,7 +89,7 @@ class ProfileSwitchSheet extends ConsumerWidget {
             child: ListView.separated(
               shrinkWrap: true,
               itemCount: profiles.length,
-              separatorBuilder: (_, __) => SizedBox(height: serene.spacing.xs),
+              separatorBuilder: (_, _) => SizedBox(height: serene.spacing.xs),
               itemBuilder: (context, index) {
                 final p = profiles[index];
                 final isSelected = p.id == currentProfile?.id;

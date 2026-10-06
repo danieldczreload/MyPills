@@ -405,6 +405,54 @@
   "settingsCloudSyncLogoutButton": "Cerrar sesión",
   "settingsCloudSyncSuccess": "Sincronización completada",
   "settingsCloudSyncLoggedOut": "Sesión cerrada",
+  "settingsCloudCalendarSection": "Calendarios en la Nube (Google / Outlook)",
+  "settingsCloudCalendarDesc": "Sincroniza tus dosis automáticamente con tu cuenta de Google Calendar o Microsoft Outlook.",
+  "settingsCloudCalendarGoogle": "Google Calendar",
+  "settingsCloudCalendarMicrosoft": "Microsoft Outlook",
+  "settingsCloudCalendarConnected": "Conectado",
+  "settingsCloudCalendarNotConnected": "No conectado",
+  "settingsCloudCalendarReauthRequired": "Hay que volver a autorizar",
+  "settingsCloudCalendarConnect": "Conectar",
+  "settingsCloudCalendarDisconnect": "Desconectar",
+  "settingsCloudCalendarReconnect": "Reconectar",
+  "settingsCloudCalendarSyncNow": "Sincronizar eventos ahora",
+  "settingsCloudCalendarDisconnectFailed": "No se pudo desconectar el calendario",
+  "settingsCloudCalendarConnectedToast": "Google Calendar conectado",
+  "settingsCloudCalendarNoProfile": "No hay un perfil activo seleccionado",
+  "settingsCloudCalendarScopeDenied": "Se necesita permiso de Google Calendar para sincronizar.",
+  "settingsCloudCalendarMismatchedAccount": "La cuenta de Google no coincide con la sesión. Vuelve a intentarlo con la misma cuenta.",
+  "settingsCloudCalendarLinkFailed": "No se pudo preparar el permiso de Google Calendar. Intenta de nuevo.",
+  "settingsCloudCalendarAuthMissing": "No se obtuvo autorización de Google. Intenta de nuevo.",
+  "settingsCloudCalendarConnectFailed": "Fallo al conectar Google Calendar",
+  "settingsCloudCalendarAuthorizeFailed": "Fallo al autorizar",
+  "settingsCloudCalendarBrowserFailed": "No se pudo abrir el navegador: {error}",
+  "@settingsCloudCalendarBrowserFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "settingsCloudCalendarConnectError": "Error al conectar: {error}",
+  "@settingsCloudCalendarConnectError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "settingsCloudCalendarInvalidAuthUrl": "URL de autorización inválida",
+  "settingsCloudCalendarSyncFailed": "No se pudo sincronizar el calendario en la nube",
+  "settingsCloudCalendarSyncEmpty": "Sincronización completada: no hay eventos por crear",
+  "settingsCloudCalendarSyncOk": "Sincronización exitosa: {created} creados, {updated} actualizados",
+  "@settingsCloudCalendarSyncOk": {
+    "placeholders": {
+      "created": { "type": "int" },
+      "updated": { "type": "int" }
+    }
+  },
+  "settingsCloudCalendarReasonUpsert": "Google no autorizó el calendario. Desconecta y vuelve a conectar aceptando el permiso.",
+  "settingsCloudCalendarReasonRefresh": "No se pudo sincronizar con el proveedor de calendario",
+  "settingsCloudCalendarReasonReauth": "Reautoriza la conexión de calendario e intenta de nuevo",
+  "settingsCloudCalendarReasonNoMedications": "Sin medicamentos registrados: no hay eventos que sincronizar",
+  "settingsCloudCalendarReasonNoSchedules": "Sin horarios activos: no hay eventos que sincronizar",
+  "settingsCloudCalendarReasonNoDoses": "No hay dosis próximas en los siguientes 14 días",
   "greetingGenericWelcome": "Bienvenido a tu espacio de salud. Mantén el control de tus medicamentos y dosis diarias.",
 
   "cancelAlertTitle": "Cancelar recordatorio",

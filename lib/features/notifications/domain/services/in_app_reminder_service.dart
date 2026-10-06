@@ -1,8 +1,8 @@
-import 'dart:developer' as developer;
 import 'dart:async';
 import 'dart:convert';
-import 'package:my_pills/core/utils/log.dart';
+import 'dart:developer' as developer;
 
+import 'package:my_pills/core/utils/log.dart';
 import 'package:my_pills/features/notifications/domain/entities/in_app_banner.dart';
 import 'package:my_pills/features/tracker/domain/entities/dose_event.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -181,7 +181,7 @@ class InAppReminderService {
 
     developer.log(
       'check now=$now doses=${_currentDoses.length} '
-      'pending=${pendingDosesCount} notifiedSet=${_notifiedDoseIds.length}',
+      'pending=$pendingDosesCount notifiedSet=${_notifiedDoseIds.length}',
       name: 'mypills.inapp',
     );
 

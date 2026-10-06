@@ -9,14 +9,16 @@ import 'package:my_pills/core/widgets/app_notification.dart';
 import 'package:my_pills/features/auth/data/id_token_claims.dart';
 import 'package:my_pills/features/auth/domain/entities/auth_user.dart';
 import 'package:my_pills/features/auth/presentation/providers/auth_providers.dart';
+import 'package:my_pills/features/calendar_integration/presentation/google_calendar_link_messages.dart';
+import 'package:my_pills/features/profile/presentation/providers/profile_providers.dart';
 import 'package:my_pills/l10n/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Serene 1-Tap Social Auth Buttons (Google & Microsoft).
 class SocialAuthButtons extends ConsumerStatefulWidget {
   const SocialAuthButtons({
-    super.key,
     required this.onSuccess,
+    super.key,
     this.onError,
   });
 
@@ -80,12 +82,15 @@ class _SocialAuthButtonsState extends ConsumerState<SocialAuthButtons> {
           );
 
       if (!mounted) return;
-      setState(() => _isLoading = false);
 
       switch (result) {
         case Success(:final value):
+          await _linkCalendarAfterLogin(l10n, account.email);
+          if (!mounted) return;
+          setState(() => _isLoading = false);
           widget.onSuccess(value);
         case FailureResult(:final failure):
+          setState(() => _isLoading = false);
           widget.onError?.call(failure.toString());
           AppNotification.showError(
             context,
@@ -101,6 +106,23 @@ class _SocialAuthButtonsState extends ConsumerState<SocialAuthButtons> {
         l10n.loginErrorGoogle(e.toString()),
       );
     }
+  }
+
+  /// The session already exists. A declined Calendar grant does not undo it.
+  Future<void> _linkCalendarAfterLogin(
+    AppLocalizations l10n,
+    String email,
+  ) async {
+    final profileId = ref.read(currentUserProfileProvider)?.id ?? '';
+    final outcome = await linkGoogleCalendarForProfile(
+      ref: ref,
+      profileId: profileId,
+      expectedEmail: email,
+    );
+    if (!mounted) return;
+    final notice = googleCalendarLinkMessage(l10n, outcome);
+    if (notice == null) return;
+    AppNotification.showWarning(context, notice);
   }
 
   Future<void> _handleMicrosoftSignIn(AppLocalizations l10n) async {

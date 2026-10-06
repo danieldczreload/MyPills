@@ -161,6 +161,7 @@ class FlutterLocalNotificationScheduler implements NotificationScheduler {
 
   /// Diagnostics: returns the actual list of pending notifications so the
   /// settings screen can prove (or disprove) that scheduling persisted.
+  @override
   Future<List<({int id, String? title, String? body})>>
   pendingNotifications() async {
     try {

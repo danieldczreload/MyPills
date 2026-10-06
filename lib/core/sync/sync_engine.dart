@@ -188,7 +188,7 @@ class SyncEngine {
               'birthDate': birthDate,
               'gender': localGender,
               'timezone': ?timezone,
-              if (localPhoto != null) 'photoUrl': localPhoto,
+              'photoUrl': ?localPhoto,
             },
           );
           if (createRes.statusCode == 201 && createRes.data != null) {
@@ -318,7 +318,7 @@ class SyncEngine {
               localMedId,
             );
             if (medRow?.serverId != null) {
-              scheduleData['medicationId'] = medRow!.serverId!;
+              scheduleData['medicationId'] = medRow!.serverId;
             }
             scheduleData.remove('localMedicationId');
           }
@@ -437,7 +437,7 @@ class SyncEngine {
               localSchedId,
             );
             if (schedRow?.serverId != null) {
-              doseData['scheduleId'] = schedRow!.serverId!;
+              doseData['scheduleId'] = schedRow!.serverId;
             }
             doseData.remove('localScheduleId');
           }
@@ -601,7 +601,7 @@ class SyncEngine {
         json['type'] as String? ?? json['ruleType'] as String? ?? 'daily';
 
     // Map rule json format
-    final Map<String, dynamic> ruleMap = {};
+    final ruleMap = <String, dynamic>{};
     if (json.containsKey('timesOfDay')) {
       ruleMap['timesOfDay'] = json['timesOfDay'];
     }
@@ -776,15 +776,13 @@ class SyncEngine {
         _db.doseEventsTable,
       )..where((t) => t.clientId.equals(clientId))).getSingleOrNull();
     }
-    if (existing == null) {
-      existing =
-          await (_db.select(_db.doseEventsTable)..where(
-                (t) =>
-                    t.scheduleId.equals(scheduleId) &
-                    t.scheduledAtUtc.equals(scheduledAtUtc),
-              ))
-              .getSingleOrNull();
-    }
+    existing ??=
+        await (_db.select(_db.doseEventsTable)..where(
+              (t) =>
+                  t.scheduleId.equals(scheduleId) &
+                  t.scheduledAtUtc.equals(scheduledAtUtc),
+            ))
+            .getSingleOrNull();
 
     if (existing != null) {
       await (_db.update(

@@ -1156,6 +1156,198 @@ abstract class AppLocalizations {
   /// **'Sesión cerrada'**
   String get settingsCloudSyncLoggedOut;
 
+  /// No description provided for @settingsCloudCalendarSection.
+  ///
+  /// In es, this message translates to:
+  /// **'Calendarios en la Nube (Google / Outlook)'**
+  String get settingsCloudCalendarSection;
+
+  /// No description provided for @settingsCloudCalendarDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Sincroniza tus dosis automáticamente con tu cuenta de Google Calendar o Microsoft Outlook.'**
+  String get settingsCloudCalendarDesc;
+
+  /// No description provided for @settingsCloudCalendarGoogle.
+  ///
+  /// In es, this message translates to:
+  /// **'Google Calendar'**
+  String get settingsCloudCalendarGoogle;
+
+  /// No description provided for @settingsCloudCalendarMicrosoft.
+  ///
+  /// In es, this message translates to:
+  /// **'Microsoft Outlook'**
+  String get settingsCloudCalendarMicrosoft;
+
+  /// No description provided for @settingsCloudCalendarConnected.
+  ///
+  /// In es, this message translates to:
+  /// **'Conectado'**
+  String get settingsCloudCalendarConnected;
+
+  /// No description provided for @settingsCloudCalendarNotConnected.
+  ///
+  /// In es, this message translates to:
+  /// **'No conectado'**
+  String get settingsCloudCalendarNotConnected;
+
+  /// No description provided for @settingsCloudCalendarReauthRequired.
+  ///
+  /// In es, this message translates to:
+  /// **'Hay que volver a autorizar'**
+  String get settingsCloudCalendarReauthRequired;
+
+  /// No description provided for @settingsCloudCalendarConnect.
+  ///
+  /// In es, this message translates to:
+  /// **'Conectar'**
+  String get settingsCloudCalendarConnect;
+
+  /// No description provided for @settingsCloudCalendarDisconnect.
+  ///
+  /// In es, this message translates to:
+  /// **'Desconectar'**
+  String get settingsCloudCalendarDisconnect;
+
+  /// No description provided for @settingsCloudCalendarReconnect.
+  ///
+  /// In es, this message translates to:
+  /// **'Reconectar'**
+  String get settingsCloudCalendarReconnect;
+
+  /// No description provided for @settingsCloudCalendarSyncNow.
+  ///
+  /// In es, this message translates to:
+  /// **'Sincronizar eventos ahora'**
+  String get settingsCloudCalendarSyncNow;
+
+  /// No description provided for @settingsCloudCalendarDisconnectFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo desconectar el calendario'**
+  String get settingsCloudCalendarDisconnectFailed;
+
+  /// No description provided for @settingsCloudCalendarConnectedToast.
+  ///
+  /// In es, this message translates to:
+  /// **'Google Calendar conectado'**
+  String get settingsCloudCalendarConnectedToast;
+
+  /// No description provided for @settingsCloudCalendarNoProfile.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay un perfil activo seleccionado'**
+  String get settingsCloudCalendarNoProfile;
+
+  /// No description provided for @settingsCloudCalendarScopeDenied.
+  ///
+  /// In es, this message translates to:
+  /// **'Se necesita permiso de Google Calendar para sincronizar.'**
+  String get settingsCloudCalendarScopeDenied;
+
+  /// No description provided for @settingsCloudCalendarMismatchedAccount.
+  ///
+  /// In es, this message translates to:
+  /// **'La cuenta de Google no coincide con la sesión. Vuelve a intentarlo con la misma cuenta.'**
+  String get settingsCloudCalendarMismatchedAccount;
+
+  /// No description provided for @settingsCloudCalendarLinkFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo preparar el permiso de Google Calendar. Intenta de nuevo.'**
+  String get settingsCloudCalendarLinkFailed;
+
+  /// No description provided for @settingsCloudCalendarAuthMissing.
+  ///
+  /// In es, this message translates to:
+  /// **'No se obtuvo autorización de Google. Intenta de nuevo.'**
+  String get settingsCloudCalendarAuthMissing;
+
+  /// No description provided for @settingsCloudCalendarConnectFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'Fallo al conectar Google Calendar'**
+  String get settingsCloudCalendarConnectFailed;
+
+  /// No description provided for @settingsCloudCalendarAuthorizeFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'Fallo al autorizar'**
+  String get settingsCloudCalendarAuthorizeFailed;
+
+  /// No description provided for @settingsCloudCalendarBrowserFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo abrir el navegador: {error}'**
+  String settingsCloudCalendarBrowserFailed(String error);
+
+  /// No description provided for @settingsCloudCalendarConnectError.
+  ///
+  /// In es, this message translates to:
+  /// **'Error al conectar: {error}'**
+  String settingsCloudCalendarConnectError(String error);
+
+  /// No description provided for @settingsCloudCalendarInvalidAuthUrl.
+  ///
+  /// In es, this message translates to:
+  /// **'URL de autorización inválida'**
+  String get settingsCloudCalendarInvalidAuthUrl;
+
+  /// No description provided for @settingsCloudCalendarSyncFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo sincronizar el calendario en la nube'**
+  String get settingsCloudCalendarSyncFailed;
+
+  /// No description provided for @settingsCloudCalendarSyncEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'Sincronización completada: no hay eventos por crear'**
+  String get settingsCloudCalendarSyncEmpty;
+
+  /// No description provided for @settingsCloudCalendarSyncOk.
+  ///
+  /// In es, this message translates to:
+  /// **'Sincronización exitosa: {created} creados, {updated} actualizados'**
+  String settingsCloudCalendarSyncOk(int created, int updated);
+
+  /// No description provided for @settingsCloudCalendarReasonUpsert.
+  ///
+  /// In es, this message translates to:
+  /// **'Google no autorizó el calendario. Desconecta y vuelve a conectar aceptando el permiso.'**
+  String get settingsCloudCalendarReasonUpsert;
+
+  /// No description provided for @settingsCloudCalendarReasonRefresh.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo sincronizar con el proveedor de calendario'**
+  String get settingsCloudCalendarReasonRefresh;
+
+  /// No description provided for @settingsCloudCalendarReasonReauth.
+  ///
+  /// In es, this message translates to:
+  /// **'Reautoriza la conexión de calendario e intenta de nuevo'**
+  String get settingsCloudCalendarReasonReauth;
+
+  /// No description provided for @settingsCloudCalendarReasonNoMedications.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin medicamentos registrados: no hay eventos que sincronizar'**
+  String get settingsCloudCalendarReasonNoMedications;
+
+  /// No description provided for @settingsCloudCalendarReasonNoSchedules.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin horarios activos: no hay eventos que sincronizar'**
+  String get settingsCloudCalendarReasonNoSchedules;
+
+  /// No description provided for @settingsCloudCalendarReasonNoDoses.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay dosis próximas en los siguientes 14 días'**
+  String get settingsCloudCalendarReasonNoDoses;
+
   /// No description provided for @greetingGenericWelcome.
   ///
   /// In es, this message translates to:

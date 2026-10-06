@@ -5,6 +5,7 @@ import 'package:my_pills/core/errors/failure.dart';
 import 'package:my_pills/core/network/api_client.dart';
 import 'package:my_pills/core/result/result.dart';
 import 'package:my_pills/features/calendar_integration/data/services/pkce_calendar_service.dart';
+import 'package:my_pills/features/calendar_integration/domain/calendar_connection.dart';
 
 class MockApiClient extends Mock implements ApiClient {}
 
@@ -188,7 +189,7 @@ void main() {
       expect(failure.message, isNull);
     });
 
-    test('getConnections returns list of provider maps on 200', () async {
+    test('getConnections returns parsed connections on 200', () async {
       when(
         () => mockDio.get<dynamic>(
           '/calendars',
@@ -207,8 +208,41 @@ void main() {
       final result = await service.getConnections(profileId: 'prof_1');
       expect(result.isSuccess, isTrue);
       final list = result.valueOrNull!;
-      expect(list.length, 1);
-      expect(list.first['provider'], 'google');
+      expect(list, hasLength(1));
+      expect(list.first.provider, CalendarProvider.google);
+      expect(list.first.isActive, isTrue);
+    });
+
+    test('connectWithServerAuthCode surfaces the JSON error message', () async {
+      when(
+        () => mockDio.post<Map<String, dynamic>>(
+          '/calendars/google/connect',
+          data: any(named: 'data'),
+        ),
+      ).thenAnswer(
+        (_) async => throw DioException(
+          requestOptions: RequestOptions(path: '/calendars/google/connect'),
+          response: Response<Map<String, dynamic>>(
+            requestOptions: RequestOptions(path: '/calendars/google/connect'),
+            statusCode: 400,
+            data: {
+              'error': {'message': 'Reauthorize'},
+            },
+          ),
+          type: DioExceptionType.badResponse,
+          message: 'Dio message',
+        ),
+      );
+
+      final result = await service.connectWithServerAuthCode(
+        profileId: 'prof_1',
+        code: 'server-auth-code',
+      );
+
+      expect(result.isFailure, isTrue);
+      final failure = (result as FailureResult<bool>).failure;
+      expect(failure, isA<ServerFailure>());
+      expect((failure as ServerFailure).message, 'Reauthorize');
     });
 
     test('disconnectCalendar returns success on 204', () async {
@@ -229,6 +263,73 @@ void main() {
         provider: 'google',
       );
       expect(result.isSuccess, isTrue);
+    });
+
+    test('disconnectCalendar treats 404 as already disconnected', () async {
+      when(
+        () => mockDio.delete<void>(
+          '/calendars/google',
+          queryParameters: any(named: 'queryParameters'),
+        ),
+      ).thenAnswer(
+        (_) async => throw DioException(
+          requestOptions: RequestOptions(path: '/calendars/google'),
+          response: Response<void>(
+            requestOptions: RequestOptions(path: '/calendars/google'),
+            statusCode: 404,
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+
+      final result = await service.disconnectCalendar(
+        profileId: 'prof_1',
+        provider: 'google',
+      );
+      expect(result.isSuccess, isTrue);
+    });
+
+    test('disconnectCalendar surfaces API error message', () async {
+      when(
+        () => mockDio.delete<void>(
+          '/calendars/google',
+          queryParameters: any(named: 'queryParameters'),
+        ),
+      ).thenAnswer(
+        (_) async => throw DioException(
+          requestOptions: RequestOptions(path: '/calendars/google'),
+          response: Response<Map<String, dynamic>>(
+            requestOptions: RequestOptions(path: '/calendars/google'),
+            statusCode: 400,
+            data: {
+              'error': {
+                'type': 'CALENDAR_DISCONNECT_FAILED',
+                'message':
+                    'The calendar events could not be removed. Reauthorize the calendar and try again.',
+              },
+            },
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+
+      final result = await service.disconnectCalendar(
+        profileId: 'prof_1',
+        provider: 'google',
+      );
+      expect(result.isFailure, isTrue);
+      expect(
+        result,
+        isA<FailureResult<void>>().having(
+          (r) => r.failure,
+          'failure',
+          isA<ServerFailure>().having(
+            (f) => f.message,
+            'message',
+            contains('Reauthorize'),
+          ),
+        ),
+      );
     });
   });
 }

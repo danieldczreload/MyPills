@@ -125,7 +125,7 @@ class _GreetingScreenState extends ConsumerState<GreetingScreen> {
                           ),
                           loading: () =>
                               const Center(child: CircularProgressIndicator()),
-                          error: (_, __) => _GreetingCard(
+                          error: (_, _) => _GreetingCard(
                             icon: Icons.error_outline_rounded,
                             title: 'Ups!',
                             message:

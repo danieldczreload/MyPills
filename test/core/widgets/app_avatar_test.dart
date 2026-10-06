@@ -35,9 +35,7 @@ void main() {
         const MaterialApp(
           home: Scaffold(
             body: AppAvatar(
-              photoPath: null,
               radius: 24,
-              fallbackIcon: Icons.person,
             ),
           ),
         ),

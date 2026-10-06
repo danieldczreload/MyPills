@@ -46,7 +46,7 @@ class SyncedProfileRepository implements UserProfileRepository {
   @override
   Future<void> saveProfile(UserProfile profile) async {
     var effectiveProfile = profile;
-    String? photoUrl = profile.photoPath;
+    var photoUrl = profile.photoPath;
 
     if (photoUrl != null &&
         !photoUrl.startsWith('http://') &&

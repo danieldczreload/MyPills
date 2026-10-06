@@ -111,7 +111,7 @@ class _UserProfileFormState extends State<UserProfileForm> {
   Future<void> _selectBirthDate() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: _birthDate ?? DateTime(1990, 1, 1),
+      initialDate: _birthDate ?? DateTime(1990),
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
     );

@@ -27,6 +27,9 @@ class AuthNotifier extends _$AuthNotifier {
   }
 
   /// Authenticates using Google ID token and initiates sync.
+  ///
+  /// Calendar linking is a separate step. An ID token cannot authorize
+  /// Calendar, and this notifier does not exchange a server auth code.
   Future<Result<AuthUser>> loginWithGoogle(
     String idToken, {
     String? displayName,

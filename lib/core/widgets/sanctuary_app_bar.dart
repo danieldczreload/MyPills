@@ -56,7 +56,6 @@ class SanctuaryAppBar extends ConsumerWidget implements PreferredSizeWidget {
                 children: [
                   AppAvatar(
                     photoPath: profile?.photoPath,
-                    radius: 20,
                   ),
                   const SizedBox(width: 8),
                   Flexible(

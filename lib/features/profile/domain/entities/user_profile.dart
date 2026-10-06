@@ -5,11 +5,13 @@ part 'user_profile.freezed.dart';
 @freezed
 abstract class UserProfile with _$UserProfile {
   const factory UserProfile({
-    @Default('default') String id,
     required String name,
     required DateTime birthDate,
-    required String gender, // 'male' | 'female' | 'other'
-    String? photoPath, // local file path from image_picker
+    // 'male' | 'female' | 'other'
+    required String gender,
+    @Default('default') String id,
+    // Local file path from image_picker.
+    String? photoPath,
     @Default(false) bool isDefault,
   }) = _UserProfile;
 
@@ -18,7 +20,7 @@ abstract class UserProfile with _$UserProfile {
   /// Computed age from birth date.
   int get age {
     final now = DateTime.now();
-    int years = now.year - birthDate.year;
+    var years = now.year - birthDate.year;
     if (now.month < birthDate.month ||
         (now.month == birthDate.month && now.day < birthDate.day)) {
       years--;

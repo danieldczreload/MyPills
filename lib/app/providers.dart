@@ -1,6 +1,7 @@
 import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:my_pills/core/auth/app_google_sign_in.dart';
 import 'package:my_pills/core/db/app_database.dart';
 import 'package:my_pills/core/network/api_client.dart';
 import 'package:my_pills/core/network/media_upload_service.dart';
@@ -9,7 +10,10 @@ import 'package:my_pills/core/storage/token_storage.dart';
 import 'package:my_pills/core/sync/sync_engine.dart';
 import 'package:my_pills/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:my_pills/features/auth/domain/repositories/auth_repository.dart';
+import 'package:my_pills/features/calendar_integration/data/link_google_calendar.dart';
 import 'package:my_pills/features/calendar_integration/data/services/pkce_calendar_service.dart';
+import 'package:my_pills/features/calendar_integration/domain/calendar_connection.dart';
+import 'package:my_pills/features/calendar_integration/domain/google_calendar_link.dart';
 import 'package:my_pills/features/medications/data/repositories/drift_medication_repository.dart';
 import 'package:my_pills/features/medications/data/repositories/synced_medications_repository.dart';
 import 'package:my_pills/features/medications/domain/repositories/medication_repository.dart';
@@ -43,6 +47,7 @@ import 'package:my_pills/features/tracker/domain/use_cases/delete_dose_event.dar
 import 'package:my_pills/features/tracker/domain/use_cases/mark_dose_missed.dart';
 import 'package:my_pills/features/tracker/domain/use_cases/mark_dose_taken.dart';
 import 'package:my_pills/features/tracker/domain/use_cases/watch_today_doses.dart';
+import 'package:riverpod/misc.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -114,15 +119,29 @@ final pkceCalendarServiceProvider = Provider<PkceCalendarService>((ref) {
   );
 });
 
-final calendarConnectionsProvider =
-    FutureProvider.family<List<Map<String, dynamic>>, String>((
+final FutureProviderFamily<List<CalendarConnection>, String>
+calendarConnectionsProvider =
+    FutureProvider.family<List<CalendarConnection>, String>((
       ref,
       profileId,
     ) async {
       final service = ref.watch(pkceCalendarServiceProvider);
       final result = await service.getConnections(profileId: profileId);
-      return result.valueOrNull ?? [];
+      return result.valueOrNull ?? const [];
     });
+
+/// Google Calendar consent + backend exchange. Login and Settings call this.
+final linkGoogleCalendarProvider = Provider<LinkGoogleCalendar>((ref) {
+  final calendars = ref.watch(pkceCalendarServiceProvider);
+  return ({required String profileId, String? expectedEmail}) {
+    return linkGoogleCalendar(
+      consent: googleCalendarConsent(appGoogleSignIn),
+      calendars: calendars,
+      profileId: profileId,
+      expectedEmail: expectedEmail,
+    );
+  };
+});
 
 /// Provides [MedicationRepository] backed by Drift + Offline-First Sync.
 @Riverpod(keepAlive: true)
@@ -142,7 +161,8 @@ MedicationRepository medicationRepository(Ref ref) {
 
 /// Profile-scoped [ScheduleRepository]. [scheduleRepositoryProvider] is the
 /// current-profile view of this family.
-final scheduleRepositoryForProfileProvider =
+final ProviderFamily<ScheduleRepository, String>
+scheduleRepositoryForProfileProvider =
     Provider.family<ScheduleRepository, String>((ref, profileId) {
       final db = ref.watch(databaseProvider);
       return SyncedScheduleRepository(
@@ -280,27 +300,28 @@ final deleteMedicationUseCaseProvider = Provider<DeleteMedication>((ref) {
   );
 });
 
-final createScheduleUseCaseProvider = Provider.family<CreateSchedule, String>((
-  ref,
-  profileId,
-) {
-  final db = ref.watch(databaseProvider);
-  return CreateSchedule(
-    ref.watch(scheduleRepositoryForProfileProvider(profileId)),
-    reconciler: DoseReconciler(
-      scheduleRepository: ref.watch(
-        scheduleRepositoryForProfileProvider(profileId),
-      ),
-      doseEventRepository: DriftDoseEventRepository(
-        db,
-        profileId: profileId,
-      ),
-      expander: ref.watch(scheduleExpanderProvider),
-      clock: () => ref.read(clockProvider),
-      onReconciled: () => ref.read(syncNotificationsUseCaseProvider).call(),
-    ),
-  );
-});
+final ProviderFamily<CreateSchedule, String> createScheduleUseCaseProvider =
+    Provider.family<CreateSchedule, String>((
+      ref,
+      profileId,
+    ) {
+      final db = ref.watch(databaseProvider);
+      return CreateSchedule(
+        ref.watch(scheduleRepositoryForProfileProvider(profileId)),
+        reconciler: DoseReconciler(
+          scheduleRepository: ref.watch(
+            scheduleRepositoryForProfileProvider(profileId),
+          ),
+          doseEventRepository: DriftDoseEventRepository(
+            db,
+            profileId: profileId,
+          ),
+          expander: ref.watch(scheduleExpanderProvider),
+          clock: () => ref.read(clockProvider),
+          onReconciled: () => ref.read(syncNotificationsUseCaseProvider).call(),
+        ),
+      );
+    });
 
 final deleteScheduleUseCaseProvider = Provider<DeleteSchedule>((ref) {
   return DeleteSchedule(
@@ -310,7 +331,8 @@ final deleteScheduleUseCaseProvider = Provider<DeleteSchedule>((ref) {
 });
 
 /// Watches all schedules filtered by medication id.
-final schedulesForMedicationProvider =
+final StreamProviderFamily<Result<List<Schedule>>, int>
+schedulesForMedicationProvider =
     StreamProvider.family<Result<List<Schedule>>, int>((ref, medicationId) {
       return ref
           .watch(scheduleRepositoryProvider)
